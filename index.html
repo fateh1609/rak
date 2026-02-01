@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAK Oasis - Premium Land Plots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="https://i.ibb.co/N61WBzn8/Generated-Image-February-01-2026-1-19-AM.jpg" fetchpriority="high">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ['"Playfair Display"', 'serif'],
+              sans: ['"Lato"', 'sans-serif'],
+            },
+            colors: {
+              gold: {
+                400: '#D4AF37',
+                500: '#C5A028',
+                600: '#AA8820',
+              },
+              deepblue: {
+                900: '#0F172A',
+                800: '#1E293B',
+              }
+            },
+            animation: {
+              'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+              'ken-burns': 'kenBurns 20s ease-out infinite alternate',
+              'shimmer': 'shimmer 2s infinite linear',
+              'scroll-down': 'scrollDown 2s infinite',
+            },
+            keyframes: {
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              kenBurns: {
+                '0%': { transform: 'scale(1)' },
+                '100%': { transform: 'scale(1.15)' },
+              },
+              shimmer: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+              },
+              scrollDown: {
+                '0%': { transform: 'translateY(0)', opacity: '1' },
+                '50%': { opacity: '1' },
+                '100%': { transform: 'translateY(12px)', opacity: '0' },
+              }
+            }
+          }
+        },
+        plugins: [
+          function({ addUtilities }) {
+            addUtilities({
+              '.no-scrollbar::-webkit-scrollbar': {
+                display: 'none',
+              },
+              '.no-scrollbar': {
+                '-ms-overflow-style': 'none',
+                'scrollbar-width': 'none',
+              },
+            });
+          },
+        ],
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.39.3"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
