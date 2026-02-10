@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabaseClient';
 import { UserProfile, UserRank } from './types';
@@ -9,6 +8,7 @@ import { LandingPage } from './components/LandingPage';
 import { Preloader } from './components/Preloader';
 import { PageAccessProvider } from './contexts/PageAccessContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // Critical assets to preload
 const PRELOAD_ASSETS = [
@@ -238,6 +238,7 @@ const App = () => {
              )}
           </div>
         )}
+        <SpeedInsights />
       </CurrencyProvider>
     </PageAccessProvider>
   );
