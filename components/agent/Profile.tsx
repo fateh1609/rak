@@ -476,7 +476,7 @@ const SecurityTab = () => (
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" defaultChecked className="w-4 h-4 accent-gold-500 rounded" />
-                    <span className="text-sm text-gray-700">SMS alerts for large transactions (&gt;₹1L)</span>
+                    <span className="text-sm text-gray-700">SMS alerts for large transactions ({'>'}₹1L)</span>
                 </label>
             </div>
             <div className="mt-4 flex justify-end">

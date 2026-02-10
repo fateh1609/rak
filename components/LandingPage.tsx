@@ -167,9 +167,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             className="w-full h-full object-cover animate-ken-burns origin-center"
             fetchPriority="high"
           />
-          {/* Gradient Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-deepblue-900/90 via-deepblue-900/40 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-deepblue-900 via-transparent to-deepblue-900/30"></div>
+          {/* Enhanced Gradient Overlays for better text visibility */}
+          <div className="absolute inset-0 bg-gradient-to-r from-deepblue-900/95 via-deepblue-900/60 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-deepblue-900 via-transparent to-deepblue-900/40"></div>
         </div>
 
         {/* Hero Content */}
@@ -225,7 +225,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 <FadeIn delay={900} className="flex-1">
                    <div className="bg-deepblue-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl text-center hover:bg-deepblue-900/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-gold-500/10 h-32 flex flex-col justify-center">
                       <div className="text-3xl lg:text-4xl font-serif text-white mb-1">406 ACRES</div>
-                      <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-semibold">Project Plan</div>
+                      <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-semibold">Total Project Area</div>
                    </div>
                 </FadeIn>
 
@@ -275,7 +275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               <h2 className="text-3xl md:text-5xl font-serif text-deepblue-900 mb-6">A Legacy in the Making</h2>
               <div className="w-16 md:w-24 h-0.5 bg-gold-500 mx-auto"></div>
               <p className="mt-6 md:mt-8 text-gray-600 text-lg md:text-xl font-light leading-relaxed">
-                Situated in the heart of Ras Al Khaimah's expansion corridor, RAK Oasis offers a sanctuary away from the bustle, yet connected to the future.
+                Situated in the heart of Ras Al Khaimah's expansion corridor, RAK Oasis offers a sanctuary away from the bustle, yet connected to the future. A master-planned community spanning 406 acres of prime land.
               </p>
             </div>
           </FadeIn>
