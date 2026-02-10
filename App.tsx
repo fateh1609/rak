@@ -9,6 +9,7 @@ import { Preloader } from './components/Preloader';
 import { PageAccessProvider } from './contexts/PageAccessContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 // Critical assets to preload
 const PRELOAD_ASSETS = [
@@ -239,6 +240,7 @@ const App = () => {
           </div>
         )}
         <SpeedInsights />
+        <Analytics />
       </CurrencyProvider>
     </PageAccessProvider>
   );
