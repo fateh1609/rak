@@ -1,28 +1,27 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { 
   LogOut, User, FileText, Map as MapIcon, Home, CreditCard, 
-  Smartphone, Bell, Menu, X, Hammer, Settings, Shield, CheckCircle, AlertCircle,
+  Smartphone, Bell, Menu, X, Settings, Shield, CheckCircle, AlertCircle,
   Phone, Mail
 } from 'lucide-react';
-import { Button } from './Button';
-import { UserProfile, Booking } from '../types';
-import { DashboardHome } from './client/Home';
-import { PurchaseWizard } from './client/PurchaseWizard';
-import { MyPlotView, PaymentsView, ProfileView, SupportView, UpdatesView } from './client/Views';
-import { DocumentsView } from './client/Documents'; // Corrected import
-import { usePageAccess } from '../contexts/PageAccessContext';
-import { MaintenanceOverlay } from './MaintenanceOverlay';
+import { Button } from '../Button';
+import { UserProfile, Booking } from '../../types';
+import { DashboardHome } from './Home';
+import { PurchaseWizard } from './PurchaseWizard';
+import { MyPlotView, PaymentsView, ProfileView, SupportView } from './Views';
+import { DocumentsView } from './Documents';
 
 interface DashboardProps {
   profile: UserProfile | null;
   onLogout: () => void;
+  onNavigate: (callback: () => void) => void;
 }
 
-type ViewState = 'DASHBOARD' | 'MY_PLOT' | 'PAYMENTS' | 'DOCUMENTS' | 'UPDATES' | 'PROFILE' | 'SUPPORT' | 'PURCHASE_WIZARD';
+type ViewState = 'DASHBOARD' | 'MY_PLOT' | 'PAYMENTS' | 'DOCUMENTS' | 'PROFILE' | 'SUPPORT' | 'PURCHASE_WIZARD';
 
-export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout }) => {
+export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewState>('DASHBOARD');
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -30,8 +29,6 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout })
   const [selectedPlot, setSelectedPlot] = useState<any>(null); // Passed to wizard
   const [showNotifications, setShowNotifications] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  
-  const { settings } = usePageAccess();
 
   // Mock Notifications Data
   const notifications = [
@@ -39,7 +36,7 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout })
       { id: 2, type: 'payment', text: 'Payment of AED 37,875 received', time: '2 hours ago', icon: CheckCircle, color: 'text-green-500' },
       { id: 3, type: 'reminder', text: 'Upcoming EMI due on Mar 01', time: '1 day ago', icon: AlertCircle, color: 'text-yellow-600' },
       { id: 4, type: 'login', text: 'New login from Safari (iPhone)', time: '2 days ago', icon: Shield, color: 'text-gray-400' },
-      { id: 5, type: 'update', text: 'Construction Update: Block A 65% Complete', time: '3 days ago', icon: Hammer, color: 'text-gold-500' },
+      { id: 5, type: 'payment', text: 'Booking amount verified', time: '3 days ago', icon: CheckCircle, color: 'text-green-500' },
   ];
 
   useEffect(() => {
@@ -65,10 +62,16 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout })
     }
   };
 
+  const navigateTo = (newView: ViewState) => {
+      onNavigate(() => {
+          setView(newView);
+          setSidebarOpen(false);
+      });
+  };
+
   const startPurchase = (plot?: any) => {
       if(plot) setSelectedPlot(plot);
-      setView('PURCHASE_WIZARD');
-      setSidebarOpen(false);
+      navigateTo('PURCHASE_WIZARD');
   };
 
   if (loading) {
@@ -83,42 +86,24 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout })
   }
 
   const renderContent = () => {
-      // Check if current view is disabled
-      if (view !== 'PURCHASE_WIZARD' && settings.client[view] === 'DISABLED') {
-          return <MaintenanceOverlay onBack={() => setView('DASHBOARD')} title={`${view.replace('_', ' ')} Unavailable`} />;
-      }
-
       switch (view) {
           case 'PURCHASE_WIZARD':
-              return <PurchaseWizard profile={profile} selectedPlot={selectedPlot} onCancel={() => setView('DASHBOARD')} onSuccess={() => { fetchData(); setView('DASHBOARD'); }} />;
+              return <PurchaseWizard profile={profile} selectedPlot={selectedPlot} onCancel={() => navigateTo('DASHBOARD')} onSuccess={() => { fetchData(); navigateTo('DASHBOARD'); }} />;
           case 'MY_PLOT':
-              return <MyPlotView bookings={bookings} onBuyNew={() => startPurchase()} profile={profile} />;
+              return <MyPlotView bookings={bookings} profile={profile} onBuyNew={() => startPurchase()} />;
           case 'PAYMENTS':
               return <PaymentsView bookings={bookings} />;
           case 'DOCUMENTS':
               return <DocumentsView bookings={bookings} profile={profile} />;
-          case 'UPDATES':
-              return <UpdatesView />;
           case 'PROFILE':
               return <ProfileView profile={profile} />;
           case 'SUPPORT':
               return <SupportView />;
           case 'DASHBOARD':
           default:
-              return <DashboardHome profile={profile} bookings={bookings} onBuyNew={() => startPurchase()} onViewChange={setView} />;
+              return <DashboardHome profile={profile} bookings={bookings} onBuyNew={() => startPurchase()} onViewChange={(v: ViewState) => navigateTo(v)} />;
       }
   };
-
-  // Navigation Items with keys mapping to settings
-  const navItems = [
-      { id: 'DASHBOARD', label: 'Dashboard', icon: Home },
-      { id: 'MY_PLOT', label: 'My Plot(s)', icon: MapIcon },
-      { id: 'PAYMENTS', label: 'Payments', icon: CreditCard },
-      { id: 'DOCUMENTS', label: 'Documents', icon: FileText },
-      { id: 'UPDATES', label: 'Updates', icon: Hammer },
-      { id: 'SUPPORT', label: 'Support', icon: Smartphone },
-      { id: 'PROFILE', label: 'Profile', icon: Settings },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">
@@ -134,33 +119,27 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout })
        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-deepblue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 shadow-2xl flex flex-col`}>
           <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gold-500 rounded-lg flex items-center justify-center font-serif font-bold text-deepblue-900 text-xl shadow-lg shadow-gold-500/20">R</div>
+                  <div className="w-8 h-8 bg-gold-500 rounded flex items-center justify-center font-serif font-bold text-deepblue-900 text-lg">R</div>
                   <div>
-                      <h1 className="font-serif font-bold text-lg tracking-wide text-white">RAK Oasis</h1>
-                      <p className="text-[10px] text-gold-400 uppercase tracking-widest font-bold">Client Portal</p>
+                      <h1 className="font-serif font-bold text-lg tracking-wide">RAK Oasis</h1>
+                      <p className="text-[10px] text-gold-400 uppercase tracking-widest">Client Portal</p>
                   </div>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/50 hover:text-white"><X size={20} /></button>
           </div>
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-              {navItems.map(item => {
-                  if (settings.client[item.id] === 'HIDDEN') return null;
-                  return (
-                      <NavItem 
-                        key={item.id}
-                        icon={item.icon} 
-                        label={item.label} 
-                        active={view === item.id} 
-                        onClick={() => { setView(item.id as ViewState); setSidebarOpen(false); }} 
-                      />
-                  );
-              })}
+              <NavItem icon={Home} label="Dashboard" active={view === 'DASHBOARD'} onClick={() => navigateTo('DASHBOARD')} />
+              <NavItem icon={MapIcon} label="My Plot(s)" active={view === 'MY_PLOT'} onClick={() => navigateTo('MY_PLOT')} />
+              <NavItem icon={CreditCard} label="Payments" active={view === 'PAYMENTS'} onClick={() => navigateTo('PAYMENTS')} />
+              <NavItem icon={FileText} label="Documents" active={view === 'DOCUMENTS'} onClick={() => navigateTo('DOCUMENTS')} />
+              <NavItem icon={Smartphone} label="Support" active={view === 'SUPPORT'} onClick={() => navigateTo('SUPPORT')} />
+              <NavItem icon={Settings} label="Profile" active={view === 'PROFILE'} onClick={() => navigateTo('PROFILE')} />
           </nav>
 
-          <div className="p-4 border-t border-white/10 bg-deepblue-800/50 z-20">
+          <div className="p-4 border-t border-white/10 bg-deepblue-800/50">
               <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
                        <User size={20} className="text-gold-400" />
                   </div>
                   <div>
@@ -169,7 +148,6 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout })
                       <p className="text-xs text-gray-400">{profile?.agent_code || 'AGT-10523'}</p>
                   </div>
               </div>
-              
               <Button 
                 variant="outline-white" 
                 fullWidth 

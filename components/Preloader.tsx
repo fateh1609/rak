@@ -3,10 +3,20 @@ import React, { useState } from 'react';
 interface PreloaderProps {
   logoUrl: string;
   isLoading: boolean;
+  status?: 'INITIAL' | 'OFFLINE' | 'RECONNECTING' | 'TRANSITION';
 }
 
-export const Preloader: React.FC<PreloaderProps> = ({ logoUrl, isLoading }) => {
+export const Preloader: React.FC<PreloaderProps> = ({ logoUrl, isLoading, status = 'INITIAL' }) => {
   const [imgError, setImgError] = useState(false);
+
+  const getStatusText = () => {
+    switch (status) {
+      case 'OFFLINE': return 'Connection Lost';
+      case 'RECONNECTING': return 'Reconnecting...';
+      case 'TRANSITION': return 'Processing...';
+      default: return 'Loading Experience';
+    }
+  };
 
   return (
     <div 
@@ -47,7 +57,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ logoUrl, isLoading }) => {
       {/* Minimal Bottom Loader */}
       <div className="absolute bottom-12 md:bottom-16 flex flex-col items-center gap-4">
         <div className="text-gold-400/80 font-serif tracking-[0.4em] text-[10px] uppercase animate-pulse">
-          Loading Experience
+          {getStatusText()}
         </div>
         {/* Minimal Line */}
         <div className="w-16 h-[1px] bg-white/10 relative overflow-hidden">

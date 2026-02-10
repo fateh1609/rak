@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 const SYSTEM_INSTRUCTION = `
@@ -22,12 +23,8 @@ IMPORTANT:
 
 export const getInvestmentAdvice = async (userQuestion: string): Promise<string> => {
   try {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      return "I'm sorry, I cannot access the investment data right now. Please check the API configuration.";
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
+    // Fix: Initialize GoogleGenAI client directly with process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
