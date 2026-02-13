@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { X, Mail, User, Phone, ArrowRight, AlertCircle, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Mail, User, Phone, ArrowRight, AlertCircle, ChevronDown, Lock, ArrowLeft } from 'lucide-react';
 import { Button } from './Button';
 
 interface AuthModalProps {
@@ -23,6 +23,7 @@ const COUNTRY_CODES = [
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
+  const [step, setStep] = useState<1 | 2>(1); // 1: Details, 2: OTP
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,53 +32,93 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
   const [fullName, setFullName] = useState('');
   const [mobile, setMobile] = useState('');
   const [countryCode, setCountryCode] = useState('+971');
+  const [otp, setOtp] = useState('');
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+      if (isOpen) {
+          setMode('LOGIN');
+          setStep(1);
+          setError('');
+          setEmail('');
+          setOtp('');
+          setFullName('');
+          setMobile('');
+      }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (mode === 'SIGNUP') {
+        // Signup Flow (Mock Failure as per previous logic)
         if (countryCode === '+971' && mobile.length !== 9) {
             setError('UAE mobile number must be 9 digits');
+            setIsLoading(false);
             return;
         }
         if (countryCode === '+91' && mobile.length !== 10) {
             setError('Indian mobile number must be 10 digits');
+            setIsLoading(false);
             return;
         }
-    }
-
-    setIsLoading(true);
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (mode === 'SIGNUP') {
-        // Requirement: Show error when trying to get OTP for signup
+        
         setIsLoading(false);
-        setError('Try again later something went wrong');
+        setError('Registration is currently invite-only. Please contact support.');
         return;
     }
 
     if (mode === 'LOGIN') {
-        // Logic to determine role from email for demo purposes (functionality kept, instructions removed)
-        let detectedRole: 'client' | 'agent' | 'admin' = 'client';
-        if (email.toLowerCase().includes('admin')) detectedRole = 'admin';
-        else if (email.toLowerCase().includes('agent')) detectedRole = 'agent';
-        
-        onLogin(detectedRole, { email });
-        setIsLoading(false);
-        onClose();
+        if (step === 1) {
+            // Step 1: Validate Email -> Send OTP
+            if (!email.includes('@')) {
+                setError('Please enter a valid email address');
+                setIsLoading(false);
+                return;
+            }
+            setIsLoading(false);
+            setStep(2); // Move to OTP step
+        } else {
+            // Step 2: Validate OTP
+            if (otp !== '123456') {
+                setError('Invalid OTP. Please try again.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Success: Determine Role
+            let detectedRole: 'client' | 'agent' | 'admin' = 'client';
+            const lowerEmail = email.toLowerCase().trim();
+
+            if (lowerEmail === 'admin@rakoasis.com') detectedRole = 'admin';
+            else if (lowerEmail === 'agent@rakoasis.com') detectedRole = 'agent';
+            else if (lowerEmail === 'client@rakoasis.com') detectedRole = 'client';
+            else {
+                // Fallback heuristic for other emails
+                if (lowerEmail.includes('admin')) detectedRole = 'admin';
+                else if (lowerEmail.includes('agent')) detectedRole = 'agent';
+            }
+            
+            setIsLoading(false);
+            onLogin(detectedRole, { email });
+            onClose();
+        }
     }
   };
 
-  // Reset error when switching modes
   const switchMode = (newMode: 'LOGIN' | 'SIGNUP') => {
       setMode(newMode);
+      setStep(1);
       setError('');
       setEmail('');
+      setOtp('');
       setFullName('');
       setMobile('');
   }
@@ -95,31 +136,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
             <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white transition p-1 rounded-full hover:bg-white/10">
               <X size={20} />
             </button>
-            <h2 className="text-2xl font-serif font-bold mb-1">
-                {mode === 'LOGIN' ? 'Welcome Back' : 'Create Account'}
-            </h2>
-            <p className="text-blue-200 text-sm">
-                {mode === 'LOGIN' ? 'Enter your email to receive a login OTP.' : 'Register to access exclusive inventory.'}
-            </p>
+            
+            {step === 1 ? (
+                <>
+                    <h2 className="text-2xl font-serif font-bold mb-1">
+                        {mode === 'LOGIN' ? 'Welcome Back' : 'Create Account'}
+                    </h2>
+                    <p className="text-blue-200 text-sm">
+                        {mode === 'LOGIN' ? 'Enter your email to access your dashboard.' : 'Register to access exclusive inventory.'}
+                    </p>
+                </>
+            ) : (
+                <>
+                    <button 
+                        onClick={() => { setStep(1); setError(''); }} 
+                        className="absolute top-4 left-4 text-white/50 hover:text-white transition p-1 rounded-full hover:bg-white/10"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <h2 className="text-2xl font-serif font-bold mb-1">Verify Identity</h2>
+                    <p className="text-blue-200 text-sm">
+                        Enter the code sent to {email}
+                    </p>
+                </>
+            )}
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex border-b border-gray-100 shrink-0">
-            <button 
-                onClick={() => switchMode('LOGIN')}
-                className={`flex-1 py-4 text-sm font-bold transition-all relative ${mode === 'LOGIN' ? 'text-deepblue-900' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-                Log In
-                {mode === 'LOGIN' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gold-500"></div>}
-            </button>
-            <button 
-                onClick={() => switchMode('SIGNUP')}
-                className={`flex-1 py-4 text-sm font-bold transition-all relative ${mode === 'SIGNUP' ? 'text-deepblue-900' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-                Sign Up
-                {mode === 'SIGNUP' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gold-500"></div>}
-            </button>
-        </div>
+        {/* Tab Switcher (Only visible in Step 1) */}
+        {step === 1 && (
+            <div className="flex border-b border-gray-100 shrink-0">
+                <button 
+                    onClick={() => switchMode('LOGIN')}
+                    className={`flex-1 py-4 text-sm font-bold transition-all relative ${mode === 'LOGIN' ? 'text-deepblue-900' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    Log In
+                    {mode === 'LOGIN' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gold-500"></div>}
+                </button>
+                <button 
+                    onClick={() => switchMode('SIGNUP')}
+                    className={`flex-1 py-4 text-sm font-bold transition-all relative ${mode === 'SIGNUP' ? 'text-deepblue-900' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    Sign Up
+                    {mode === 'SIGNUP' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gold-500"></div>}
+                </button>
+            </div>
+        )}
 
         {/* Form Content */}
         <div className="p-6 md:p-8 overflow-y-auto">
@@ -133,7 +194,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                     </div>
                 )}
 
-                {mode === 'SIGNUP' && (
+                {/* SIGNUP FIELDS */}
+                {mode === 'SIGNUP' && step === 1 && (
                     <>
                         <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-center gap-3 mb-2">
                             <User className="text-blue-600" size={20} />
@@ -167,7 +229,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                                         value={countryCode}
                                         onChange={(e) => {
                                             setCountryCode(e.target.value);
-                                            setMobile(''); // Clear mobile when country changes to avoid mismatched lengths
+                                            setMobile('');
                                         }}
                                     >
                                         {COUNTRY_CODES.map(c => (
@@ -196,7 +258,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                     </>
                 )}
 
-                {mode === 'LOGIN' && (
+                {/* LOGIN STEP 1 */}
+                {mode === 'LOGIN' && step === 1 && (
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email Address</label>
                         <div className="relative">
@@ -213,22 +276,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                     </div>
                 )}
 
+                {/* LOGIN STEP 2 (OTP) */}
+                {mode === 'LOGIN' && step === 2 && (
+                    <div className="animate-fade-in-up">
+                        <div className="mb-4 text-center">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deepblue-900">
+                                <Lock size={24} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-900">Authentication Required</p>
+                            <p className="text-xs text-gray-500 mt-1">Please check your email inbox for the code.</p>
+                        </div>
+
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1 text-center">One-Time Password</label>
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                required 
+                                maxLength={6}
+                                placeholder="123456"
+                                className="w-full text-center py-3 border-2 border-gray-200 rounded-xl text-2xl font-bold tracking-[0.5em] text-deepblue-900 focus:outline-none focus:border-gold-500 transition-all placeholder:tracking-normal placeholder:text-base placeholder:font-normal"
+                                value={otp}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    setOtp(val);
+                                }}
+                                autoFocus
+                            />
+                        </div>
+                        <p className="text-center text-xs text-gray-400 mt-4">
+                            Didn't receive code? <button type="button" className="text-gold-600 font-bold hover:underline">Resend</button>
+                        </p>
+                    </div>
+                )}
+
                 <Button 
                     type="submit" 
                     fullWidth 
-                    className="!py-3 shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 mt-4"
+                    className="!py-3 shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 mt-6"
                     disabled={isLoading}
                 >
                     {isLoading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     ) : (
                         <>
-                            {mode === 'LOGIN' ? 'Get Login OTP' : 'Get OTP'} <ArrowRight size={18} />
+                            {step === 1 ? (mode === 'LOGIN' ? 'Get Login OTP' : 'Request OTP') : 'Verify & Login'} 
+                            <ArrowRight size={18} />
                         </>
                     )}
                 </Button>
                 
-                {mode === 'SIGNUP' && !error && (
+                {mode === 'SIGNUP' && step === 1 && (
                     <p className="text-center text-xs text-gray-400 mt-2">
                         You will be asked to enter a 6-digit code in the next step.
                     </p>
