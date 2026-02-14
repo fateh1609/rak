@@ -12,6 +12,7 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { SessionManager } from './lib/session';
 
 // Critical assets to preload
 const PRELOAD_ASSETS = [
@@ -43,6 +44,37 @@ const AppContent = () => {
     sessionRef.current = session;
   }, [session]);
 
+  // --- INACTIVITY MONITOR ---
+  useEffect(() => {
+    const handleActivity = () => {
+        SessionManager.updateActivity();
+    };
+
+    // Listen for user interaction
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+
+    // Periodic check for timeout
+    const interval = setInterval(() => {
+        const currentUser = SessionManager.getSession();
+        if (profile && !currentUser) {
+            // Session expired in background
+            console.log("Auto-logout triggered by inactivity");
+            handleLogout();
+        }
+    }, 60000); // Check every minute
+
+    return () => {
+        window.removeEventListener('mousemove', handleActivity);
+        window.removeEventListener('keydown', handleActivity);
+        window.removeEventListener('click', handleActivity);
+        window.removeEventListener('scroll', handleActivity);
+        clearInterval(interval);
+    };
+  }, [profile]);
+
   useEffect(() => {
     // 1. Asset Preloading
     const loadAssets = async () => {
@@ -61,10 +93,19 @@ const AppContent = () => {
     // 2. Auth Check
     const checkAuth = async () => {
       try {
+        // Priority 1: Supabase Session
         const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
+        
         if (session) {
+          setSession(session);
           await fetchProfile(session.user.id);
+        } else {
+          // Priority 2: Encrypted Local Session (Mock)
+          const encryptedUser = SessionManager.getSession();
+          if (encryptedUser) {
+             setProfile(encryptedUser);
+             setSession({ user: { id: encryptedUser.id, email: encryptedUser.email } });
+          }
         }
       } catch (e) {
         console.error("Auth check failed", e);
@@ -76,18 +117,14 @@ const AppContent = () => {
     // 3. Min Time Timer (for branding)
     const timer = setTimeout(() => setMinTimeElapsed(true), 2000);
 
-    // 4. Network Listeners with Re-Link Logic
+    // 4. Network Listeners
     const handleOnline = async () => {
         setIsReconnecting(true);
-        
-        // Wait minimum duration to show the "Reconnecting" state
         const delayPromise = new Promise(resolve => setTimeout(resolve, MIN_LOADER_DURATION));
         
-        // Re-establish link to server using current session from ref
         if (sessionRef.current?.user?.id) {
             try {
                await fetchProfile(sessionRef.current.user.id);
-               // Optional: Refresh session token if needed (only if real session)
                const { data } = await supabase.auth.getSession();
                if(data.session) await supabase.auth.refreshSession(); 
             } catch (e) {
@@ -111,11 +148,15 @@ const AppContent = () => {
 
     // Auth Subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
       if (session) {
+        setSession(session);
         fetchProfile(session.user.id);
       } else {
-        setProfile(null);
+        // Only clear if no encrypted local session exists
+        if (!SessionManager.getSession()) {
+            setSession(null);
+            setProfile(null);
+        }
       }
     });
 
@@ -129,6 +170,8 @@ const AppContent = () => {
 
   const fetchProfile = async (userId: string) => {
     try {
+        if (userId === 'mock-user-id-123') return;
+
         const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -138,7 +181,6 @@ const AppContent = () => {
         if (data) {
             setProfile(data as UserProfile);
         } else {
-            // Fallback for demo/mock users if not in DB
             setProfile({
                 id: userId,
                 full_name: 'Valued Client',
@@ -156,9 +198,9 @@ const AppContent = () => {
   };
 
   const handleMockLogin = async (role: 'client' | 'agent' | 'admin', customData?: Partial<UserProfile>) => {
-    setIsTransitioning(true); // Trigger transition loader
+    setIsTransitioning(true);
     
-    // Simulate server linking and data fetch delay
+    // Simulate server cryptographic handshake
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const defaultName = role === 'admin' ? 'System Administrator' : role === 'agent' ? 'Rajesh Kumar' : 'Amit Sharma';
@@ -176,33 +218,34 @@ const AppContent = () => {
       kyc_verified: true
     };
     
+    // CREATE ENCRYPTED SESSION
+    SessionManager.createSession(mockProfile);
+
     setProfile(mockProfile);
-    setSession({ user: { id: mockProfile.id } });
+    setSession({ user: { id: mockProfile.id, email: mockProfile.email } });
     
-    // Router will handle redirection via <Navigate> in render
     setIsTransitioning(false); 
   };
 
   const handleLogout = async () => {
       setIsTransitioning(true);
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // CLEAR SECURE SESSION
+      SessionManager.clearSession();
+      await supabase.auth.signOut();
+
       setSession(null);
       setProfile(null);
       navigate('/');
       setIsTransitioning(false);
   }
 
-  // Global Navigation Handler for Sub-pages
   const handleNavigate = async (callback: () => void) => {
       if (isTransitioning) return;
-      
       setIsTransitioning(true);
-      // Wait for minimum duration (0.8s)
       await new Promise(resolve => setTimeout(resolve, MIN_LOADER_DURATION));
-      
-      // Execute the view change
       callback();
-      
       setIsTransitioning(false);
   };
 
@@ -225,7 +268,6 @@ const AppContent = () => {
         status={loaderStatus} 
       />
       
-      {/* Render App Content - Hidden or Behind Preloader until ready */}
       {isSessionChecked && (
         <div className={shouldShowLoader ? 'fixed inset-0 -z-10' : ''}>
            <Routes>
