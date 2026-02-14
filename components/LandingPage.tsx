@@ -311,6 +311,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       </section>
 
+      {/* Developer Branding Section */}
+      <section className="py-14 bg-white border-t border-gray-100">
+        <div className="container mx-auto px-4 text-center">
+          <FadeIn>
+            <p className="text-xs md:text-sm text-gold-600 font-bold uppercase tracking-[0.2em] mb-4">
+              Official Developer
+            </p>
+            <h3 className="text-2xl md:text-4xl font-serif text-deepblue-900 tracking-wide">
+              A Legacy Project by <br className="md:hidden" />
+              <span className="border-b-2 border-gold-500 pb-2">SHAHAB BUILDING CONTRACTING LLC</span>
+            </h3>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* Pricing & Calculator Section */}
       <section id="pricing" className="py-16 md:py-24 bg-white relative scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6">
