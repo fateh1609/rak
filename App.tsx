@@ -11,7 +11,7 @@ import { PageAccessProvider } from './contexts/PageAccessContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { SessionManager } from './lib/session';
 
 // Critical assets to preload
@@ -35,7 +35,7 @@ const AppContent = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
-  // Ref to access latest session in event listeners without re-triggering effects
+  const [searchParams, setSearchParams] = useSearchParams();
   const sessionRef = useRef(session);
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,17 +50,15 @@ const AppContent = () => {
         SessionManager.updateActivity();
     };
 
-    // Listen for user interaction
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
     window.addEventListener('click', handleActivity);
     window.addEventListener('scroll', handleActivity);
 
-    // Periodic check for timeout
     const interval = setInterval(() => {
         const currentUser = SessionManager.getSession();
-        if (profile && !currentUser) {
-            // Session expired in background
+        // If we think we are logged in (profile exists) but session manager says no (expired), logout
+        if (profile && !currentUser && !session?.user?.id.startsWith('sb-')) { // Exclude real supabase sessions from this check
             console.log("Auto-logout triggered by inactivity");
             handleLogout();
         }
@@ -73,7 +71,7 @@ const AppContent = () => {
         window.removeEventListener('scroll', handleActivity);
         clearInterval(interval);
     };
-  }, [profile]);
+  }, [profile, session]);
 
   useEffect(() => {
     // 1. Asset Preloading
@@ -83,7 +81,7 @@ const AppContent = () => {
           const img = new Image();
           img.src = src;
           img.onload = resolve;
-          img.onerror = resolve; // Resolve even on error to prevent blocking
+          img.onerror = resolve; 
         });
       });
       await Promise.all(promises);
@@ -93,18 +91,40 @@ const AppContent = () => {
     // 2. Auth Check
     const checkAuth = async () => {
       try {
-        // Priority 1: Supabase Session
+        // A. Check for Token in URL (Highest Priority for Mock)
+        const urlToken = searchParams.get('token');
+        if (urlToken) {
+            const user = SessionManager.verifyToken(urlToken);
+            if (user) {
+                // Initialize Session from URL
+                SessionManager.setSession(urlToken);
+                setProfile(user);
+                setSession({ user: { id: user.id, email: user.email } });
+                setIsSessionChecked(true);
+                return; // Skip other checks
+            } else {
+                // Invalid token in URL, clean it up
+                setSearchParams({}, { replace: true });
+            }
+        }
+
+        // B. Check Supabase (Real Auth)
         const { data: { session } } = await supabase.auth.getSession();
-        
         if (session) {
           setSession(session);
           await fetchProfile(session.user.id);
         } else {
-          // Priority 2: Encrypted Local Session (Mock)
+          // C. Check Local Storage (Persisted Mock)
           const encryptedUser = SessionManager.getSession();
           if (encryptedUser) {
              setProfile(encryptedUser);
              setSession({ user: { id: encryptedUser.id, email: encryptedUser.email } });
+             
+             // Ensure URL reflects the token (Restore ?token=...)
+             const storedToken = localStorage.getItem('rak_session_token');
+             if (storedToken) {
+                 setSearchParams({ token: storedToken }, { replace: true });
+             }
           }
         }
       } catch (e) {
@@ -114,7 +134,7 @@ const AppContent = () => {
       }
     };
 
-    // 3. Min Time Timer (for branding)
+    // 3. Min Time Timer
     const timer = setTimeout(() => setMinTimeElapsed(true), 2000);
 
     // 4. Network Listeners
@@ -142,17 +162,14 @@ const AppContent = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Execute
     loadAssets();
     checkAuth();
 
-    // Auth Subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setSession(session);
         fetchProfile(session.user.id);
       } else {
-        // Only clear if no encrypted local session exists
         if (!SessionManager.getSession()) {
             setSession(null);
             setProfile(null);
@@ -200,7 +217,6 @@ const AppContent = () => {
   const handleMockLogin = async (role: 'client' | 'agent' | 'admin', customData?: Partial<UserProfile>) => {
     setIsTransitioning(true);
     
-    // Simulate server cryptographic handshake
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const defaultName = role === 'admin' ? 'System Administrator' : role === 'agent' ? 'Rajesh Kumar' : 'Amit Sharma';
@@ -218,8 +234,11 @@ const AppContent = () => {
       kyc_verified: true
     };
     
-    // CREATE ENCRYPTED SESSION
-    SessionManager.createSession(mockProfile);
+    // Create Session
+    const token = SessionManager.createSession(mockProfile);
+
+    // Update URL with Token
+    setSearchParams({ token }, { replace: true });
 
     setProfile(mockProfile);
     setSession({ user: { id: mockProfile.id, email: mockProfile.email } });
@@ -231,13 +250,20 @@ const AppContent = () => {
       setIsTransitioning(true);
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // CLEAR SECURE SESSION
+      // 1. Clear Storage
       SessionManager.clearSession();
+      
+      // 2. Sign out Supabase (if active)
       await supabase.auth.signOut();
 
+      // 3. Clear State
       setSession(null);
       setProfile(null);
-      navigate('/');
+
+      // 4. Remove Token from URL & Navigate Home
+      setSearchParams({}, { replace: true });
+      navigate('/', { replace: true });
+      
       setIsTransitioning(false);
   }
 
@@ -249,7 +275,6 @@ const AppContent = () => {
       setIsTransitioning(false);
   };
 
-  // Determine Loader Status
   const isInitialLoad = !(isSessionChecked && areAssetsLoaded && minTimeElapsed);
   const shouldShowLoader = isInitialLoad || !isOnline || isTransitioning || isReconnecting;
   

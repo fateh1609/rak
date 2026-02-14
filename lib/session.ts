@@ -43,7 +43,33 @@ export const SessionManager = {
     return token;
   },
 
-  // Validate and Decrypt Session
+  // Manual Set Session (e.g. from URL)
+  setSession: (token: string) => {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ACTIVITY_KEY, Date.now().toString());
+  },
+
+  // Verify Token String without storage dependency
+  verifyToken: (token: string): UserProfile | null => {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) throw new Error("Invalid Token Format");
+
+      const encryptedPayload = parts[1];
+      const decryptedString = xorEncrypt(atob(encryptedPayload), SECRET_KEY);
+      const data = JSON.parse(decryptedString);
+
+      // Basic structure check
+      if (!data.id || !data.role) return null;
+
+      return data as UserProfile;
+    } catch (e) {
+      console.error("Token verification failed", e);
+      return null;
+    }
+  },
+
+  // Validate and Decrypt Session from Storage
   getSession: (): UserProfile | null => {
     const token = localStorage.getItem(TOKEN_KEY);
     const lastActive = localStorage.getItem(ACTIVITY_KEY);
@@ -58,20 +84,7 @@ export const SessionManager = {
       return null;
     }
 
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) throw new Error("Invalid Token Format");
-
-      const encryptedPayload = parts[1];
-      const decryptedString = xorEncrypt(atob(encryptedPayload), SECRET_KEY);
-      const data = JSON.parse(decryptedString);
-
-      return data as UserProfile;
-    } catch (e) {
-      console.error("Failed to decrypt session", e);
-      SessionManager.clearSession();
-      return null;
-    }
+    return SessionManager.verifyToken(token);
   },
 
   updateActivity: () => {
