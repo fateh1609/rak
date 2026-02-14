@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabaseClient';
 import { UserProfile, UserRank } from './types';
@@ -10,6 +11,7 @@ import { PageAccessProvider } from './contexts/PageAccessContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 // Critical assets to preload
 const PRELOAD_ASSETS = [
@@ -19,7 +21,8 @@ const PRELOAD_ASSETS = [
 
 const MIN_LOADER_DURATION = 400; // 0.4 Seconds
 
-const App = () => {
+// Wrapper component to handle routing logic
+const AppContent = () => {
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   
@@ -33,6 +36,8 @@ const App = () => {
 
   // Ref to access latest session in event listeners without re-triggering effects
   const sessionRef = useRef(session);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     sessionRef.current = session;
@@ -110,10 +115,6 @@ const App = () => {
       if (session) {
         fetchProfile(session.user.id);
       } else {
-        // Only clear profile if we are truly logged out from Supabase context
-        // and not in a mock session state that might be managed differently
-        // However, for consistency, if Supabase says logout, we logout.
-        // Mock login bypasses this by setting state directly.
         setProfile(null);
       }
     });
@@ -124,7 +125,7 @@ const App = () => {
       window.removeEventListener('offline', handleOffline);
       subscription.unsubscribe();
     };
-  }, []); // Empty dependency array ensures this runs only once
+  }, []); 
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -178,6 +179,7 @@ const App = () => {
     setProfile(mockProfile);
     setSession({ user: { id: mockProfile.id } });
     
+    // Router will handle redirection via <Navigate> in render
     setIsTransitioning(false); 
   };
 
@@ -186,6 +188,7 @@ const App = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSession(null);
       setProfile(null);
+      navigate('/');
       setIsTransitioning(false);
   }
 
@@ -215,34 +218,61 @@ const App = () => {
   else if (isInitialLoad) loaderStatus = 'INITIAL';
 
   return (
-    <PageAccessProvider>
-      <CurrencyProvider>
-        <Preloader 
-          logoUrl={PRELOAD_ASSETS[0]} 
-          isLoading={shouldShowLoader} 
-          status={loaderStatus} 
-        />
-        
-        {/* Render App Content - Hidden or Behind Preloader until ready */}
-        {isSessionChecked && (
-          <div className={shouldShowLoader ? 'fixed inset-0 -z-10' : ''}>
-             {profile ? (
-                profile.role === 'admin' ? (
-                    <AdminDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} />
-                ) : profile.role === 'agent' ? (
-                    <AgentDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} />
-                ) : (
-                    <ClientDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} />
-                )
-             ) : (
-                <LandingPage onLogin={handleMockLogin} />
-             )}
-          </div>
-        )}
-        <SpeedInsights />
-        <Analytics />
-      </CurrencyProvider>
-    </PageAccessProvider>
+    <>
+      <Preloader 
+        logoUrl={PRELOAD_ASSETS[0]} 
+        isLoading={shouldShowLoader} 
+        status={loaderStatus} 
+      />
+      
+      {/* Render App Content - Hidden or Behind Preloader until ready */}
+      {isSessionChecked && (
+        <div className={shouldShowLoader ? 'fixed inset-0 -z-10' : ''}>
+           <Routes>
+              {/* Landing Page */}
+              <Route path="/" element={
+                profile ? <Navigate to={`/${profile.role}`} replace /> : <LandingPage onLogin={handleMockLogin} />
+              } />
+
+              {/* Protected Routes */}
+              <Route path="/client/*" element={
+                profile?.role === 'client' ? 
+                <ClientDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> : 
+                <Navigate to="/" replace />
+              } />
+              
+              <Route path="/agent/*" element={
+                profile?.role === 'agent' ? 
+                <AgentDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> : 
+                <Navigate to="/" replace />
+              } />
+              
+              <Route path="/admin/*" element={
+                profile?.role === 'admin' ? 
+                <AdminDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> : 
+                <Navigate to="/" replace />
+              } />
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+           </Routes>
+        </div>
+      )}
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <HashRouter>
+      <PageAccessProvider>
+        <CurrencyProvider>
+          <AppContent />
+          <SpeedInsights />
+          <Analytics />
+        </CurrencyProvider>
+      </PageAccessProvider>
+    </HashRouter>
   );
 };
 

@@ -16,9 +16,9 @@ import { RecruitAgent } from './Recruit';
 import { MarketingView } from './Marketing';
 import { ProfileView } from './Profile';
 import { SupportView } from './Support';
-
-// --- TYPES ---
-export type AgentView = 'DASHBOARD' | 'NETWORK' | 'SALES' | 'EARNINGS' | 'LEADERBOARD' | 'MARKETING' | 'PROFILE' | 'SUPPORT' | 'RECRUIT';
+import { usePageAccess } from '../../contexts/PageAccessContext';
+import { MaintenanceOverlay } from '../MaintenanceOverlay';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 interface DashboardProps {
   profile: UserProfile | null;
@@ -27,37 +27,57 @@ interface DashboardProps {
 }
 
 export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, onNavigate }) => {
-  const [view, setView] = useState<AgentView>('DASHBOARD');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { settings } = usePageAccess();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     onLogout();
   };
 
-  const navigateTo = (newView: AgentView) => {
+  const handleNav = (path: string) => {
       onNavigate(() => {
-          setView(newView);
+          navigate(path);
           setSidebarOpen(false);
       });
   };
 
-  const renderContent = () => {
-      switch(view) {
-          case 'NETWORK': return <NetworkView onRecruit={() => navigateTo('RECRUIT')} />;
-          case 'RECRUIT': return <RecruitAgent onCancel={() => navigateTo('NETWORK')} onSuccess={() => navigateTo('NETWORK')} />;
-          case 'SALES': return <SalesView />;
-          case 'EARNINGS': return <EarningsView />;
-          case 'LEADERBOARD': return <LeaderboardView />;
-          case 'MARKETING': return <MarketingView profile={profile} />;
-          case 'PROFILE': return <ProfileView profile={profile} />;
-          case 'SUPPORT': return <SupportView />;
-          default: return <DashboardHome profile={profile} onChangeView={(v: AgentView) => navigateTo(v)} />;
-      }
+  // Determine current view for highlighting
+  // Map paths to setting keys
+  const getActiveKey = () => {
+      const path = location.pathname.split('/').pop()?.toUpperCase() || 'DASHBOARD';
+      if (path === 'AGENT') return 'DASHBOARD';
+      if (path === 'RECRUIT') return 'NETWORK';
+      return path;
   };
+  
+  const currentKey = getActiveKey();
+  const displayTitle = location.pathname === '/agent' || location.pathname === '/agent/' ? 'Dashboard' : currentKey.charAt(0) + currentKey.slice(1).toLowerCase().replace('_', ' ');
+
+  const navItems = [
+      { id: '', label: 'Dashboard', icon: Home, key: 'DASHBOARD' },
+      { id: 'network', label: 'My Network', icon: Users, key: 'NETWORK' },
+      { id: 'sales', label: 'Sales', icon: Briefcase, key: 'SALES' },
+      { id: 'earnings', label: 'Earnings', icon: DollarSign, key: 'EARNINGS' },
+      { id: 'leaderboard', label: 'Leaderboard', icon: Award, key: 'LEADERBOARD' },
+      { divider: true },
+      { id: 'marketing', label: 'Marketing', icon: Globe, key: 'MARKETING' },
+      { id: 'profile', label: 'Profile', icon: User, key: 'PROFILE' },
+      { id: 'support', label: 'Support', icon: Smartphone, key: 'SUPPORT' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans text-gray-800">
+      {/* MOBILE BACKDROP OVERLAY */}
+      {sidebarOpen && (
+         <div 
+           className="fixed inset-0 z-40 bg-deepblue-900/80 backdrop-blur-sm lg:hidden transition-opacity"
+           onClick={() => setSidebarOpen(false)}
+         />
+      )}
+
       {/* SIDEBAR */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-[250px] bg-deepblue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 shadow-2xl flex flex-col border-r border-white/5`}>
          <div className="p-6 border-b border-white/10 flex items-center justify-between">
@@ -72,17 +92,25 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
          </div>
 
          <nav className="flex-1 p-4 space-y-1 overflow-y-auto no-scrollbar">
-             <NavItem icon={Home} label="Dashboard" active={view === 'DASHBOARD'} onClick={() => navigateTo('DASHBOARD')} />
-             <NavItem icon={Users} label="My Network" active={view === 'NETWORK' || view === 'RECRUIT'} onClick={() => navigateTo('NETWORK')} />
-             <NavItem icon={Briefcase} label="Sales" active={view === 'SALES'} onClick={() => navigateTo('SALES')} />
-             <NavItem icon={DollarSign} label="Earnings" active={view === 'EARNINGS'} onClick={() => navigateTo('EARNINGS')} />
-             <NavItem icon={Award} label="Leaderboard" active={view === 'LEADERBOARD'} onClick={() => navigateTo('LEADERBOARD')} />
-             
-             <div className="my-4 border-t border-white/10"></div>
-             
-             <NavItem icon={Globe} label="Marketing" active={view === 'MARKETING'} onClick={() => navigateTo('MARKETING')} />
-             <NavItem icon={User} label="Profile" active={view === 'PROFILE'} onClick={() => navigateTo('PROFILE')} />
-             <NavItem icon={Smartphone} label="Support" active={view === 'SUPPORT'} onClick={() => navigateTo('SUPPORT')} />
+             {navItems.map((item, index) => {
+                 if (item.divider) return <div key={index} className="my-4 border-t border-white/10"></div>;
+                 if (!item.id && item.id !== '') return null; // Should not happen based on array
+                 if (item.key && settings.agent[item.key] === 'HIDDEN') return null;
+                 
+                 const isActive = item.id === '' 
+                    ? location.pathname === '/agent' || location.pathname === '/agent/'
+                    : location.pathname.includes(`/agent/${item.id}`);
+
+                 return (
+                     <NavItem 
+                        key={index}
+                        icon={item.icon} 
+                        label={item.label} 
+                        active={isActive} 
+                        onClick={() => handleNav(item.id || '')} 
+                     />
+                 );
+             })}
          </nav>
 
          {/* Rank Progress Widget */}
@@ -96,7 +124,7 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
              </div>
              <div className="flex justify-between items-center">
                 <p className="text-[10px] text-gray-400">Next: Rank 4</p>
-                <button onClick={() => navigateTo('DASHBOARD')} className="text-[10px] text-gold-400 font-bold uppercase tracking-wider hover:text-white transition flex items-center gap-1">
+                <button onClick={() => handleNav('')} className="text-[10px] text-gold-400 font-bold uppercase tracking-wider hover:text-white transition flex items-center gap-1">
                     Details <ChevronRight size={10} />
                 </button>
              </div>
@@ -122,15 +150,16 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50">
           {/* Top Bar */}
-          <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 sticky top-0 z-40 shadow-sm">
+          <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 sticky top-0 z-30 shadow-sm">
               <div className="flex items-center gap-4">
                   <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-gray-500 hover:text-deepblue-900"><Menu size={24} /></button>
-                  <h2 className="text-xl font-bold text-deepblue-900 hidden sm:block">
-                      Welcome, {profile?.full_name?.split(' ')[0]}!
+                  <h2 className="text-xl font-bold text-deepblue-900 hidden sm:block capitalize">
+                      {location.pathname === '/agent' || location.pathname === '/agent/' ? `Welcome, ${profile?.full_name?.split(' ')[0]}!` : displayTitle}
                   </h2>
+                  <h2 className="text-lg font-bold text-deepblue-900 sm:hidden">RAK Agent</h2>
               </div>
               <div className="flex items-center gap-3 md:gap-6">
-                  <Button className="!py-2 !px-4 !text-xs hidden sm:flex items-center gap-1 shadow-gold-500/20 rounded-full" onClick={() => navigateTo('SALES')}>
+                  <Button className="!py-2 !px-4 !text-xs hidden sm:flex items-center gap-1 shadow-gold-500/20 rounded-full" onClick={() => handleNav('sales')}>
                       <Plus size={14} /> Add New Client
                   </Button>
                   <div className="flex items-center gap-4">
@@ -141,7 +170,7 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
                       <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
                       
                       {/* Profile Dropdown Trigger */}
-                      <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigateTo('PROFILE')}>
+                      <div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNav('profile')}>
                           <div className="text-right hidden sm:block leading-tight">
                               <p className="text-sm font-bold text-gray-900 group-hover:text-gold-600 transition">{profile?.full_name}</p>
                               <p className="text-[10px] text-gray-500 font-mono bg-gray-100 px-1.5 rounded inline-block mt-0.5">{profile?.agent_code || 'AGT-10523'}</p>
@@ -149,7 +178,7 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
                           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-bold group-hover:bg-gold-500 group-hover:text-white transition shadow-sm border border-gray-200 overflow-hidden">
                               {profile?.full_name?.charAt(0)}
                           </div>
-                          <ChevronRight className="rotate-90 text-gray-400" size={16} />
+                          <ChevronRight className="rotate-90 text-gray-400 hidden sm:block" size={16} />
                       </div>
                       <button onClick={handleSignOut} className="ml-2 text-gray-400 hover:text-red-500"><LogOut size={20} /></button>
                   </div>
@@ -158,7 +187,18 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
 
           {/* Scrollable Area */}
           <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-              {renderContent()}
+              <Routes>
+                  <Route index element={<DashboardHome profile={profile} onChangeView={(v: string) => handleNav(v.toLowerCase())} />} />
+                  <Route path="network" element={settings.agent['NETWORK'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <NetworkView onRecruit={() => handleNav('recruit')} />} />
+                  <Route path="recruit" element={<RecruitAgent onCancel={() => handleNav('network')} onSuccess={() => handleNav('network')} />} />
+                  <Route path="sales" element={settings.agent['SALES'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <SalesView />} />
+                  <Route path="earnings" element={settings.agent['EARNINGS'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <EarningsView />} />
+                  <Route path="leaderboard" element={settings.agent['LEADERBOARD'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <LeaderboardView />} />
+                  <Route path="marketing" element={settings.agent['MARKETING'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <MarketingView profile={profile} />} />
+                  <Route path="profile" element={settings.agent['PROFILE'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <ProfileView profile={profile} />} />
+                  <Route path="support" element={settings.agent['SUPPORT'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <SupportView />} />
+                  <Route path="*" element={<Navigate to="" replace />} />
+              </Routes>
           </main>
       </div>
     </div>

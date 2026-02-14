@@ -13,6 +13,9 @@ import {
   PlotsView, ClientsView, ContentView, ReportsView, 
   SupportView, SettingsView, PageControlView 
 } from './Views';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+
+export type AdminSection = 'DASHBOARD' | 'AGENTS' | 'PAYOUTS' | 'COMMISSIONS' | 'PAYMENTS' | 'PLOTS' | 'CLIENTS' | 'CONTENT' | 'REPORTS' | 'SUPPORT' | 'SETTINGS' | 'PAGE_CONTROL';
 
 interface DashboardProps {
   profile: UserProfile | null;
@@ -20,52 +23,24 @@ interface DashboardProps {
   onNavigate: (callback: () => void) => void;
 }
 
-export type AdminSection = 
-  | 'DASHBOARD' 
-  | 'CLIENTS' 
-  | 'AGENTS' 
-  | 'PLOTS' 
-  | 'PAYMENTS' 
-  | 'COMMISSIONS' 
-  | 'PAYOUTS' 
-  | 'CONTENT' 
-  | 'REPORTS' 
-  | 'SUPPORT' 
-  | 'SETTINGS'
-  | 'PAGE_CONTROL';
-
 export const AdminDashboard: React.FC<DashboardProps> = ({ profile, onLogout, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<AdminSection>('DASHBOARD');
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     onLogout();
   };
 
-  const navigateTo = (view: AdminSection) => {
+  const handleNav = (path: string) => {
     onNavigate(() => {
-        setCurrentView(view);
+        navigate(path);
         if (window.innerWidth < 768) setSidebarOpen(false);
     });
   };
 
-  const renderContent = () => {
-    switch (currentView) {
-      case 'AGENTS': return <AgentsView />;
-      case 'PAYOUTS': return <PayoutsView />;
-      case 'COMMISSIONS': return <CommissionsView />;
-      case 'PAYMENTS': return <PaymentsView />; 
-      case 'PLOTS': return <PlotsView />;
-      case 'CLIENTS': return <ClientsView />;
-      case 'CONTENT': return <ContentView />;
-      case 'REPORTS': return <ReportsView />;
-      case 'SUPPORT': return <SupportView />;
-      case 'SETTINGS': return <SettingsView />;
-      case 'PAGE_CONTROL': return <PageControlView />;
-      case 'DASHBOARD': default: return <AdminHome onViewChange={(view) => navigateTo(view)} />;
-    }
-  };
+  const currentView = location.pathname.split('/').pop()?.toUpperCase() || 'DASHBOARD';
 
   return (
     <div className="min-h-screen bg-gray-100 flex font-mono text-sm">
@@ -90,51 +65,51 @@ export const AdminDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
         
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 space-y-px custom-scrollbar">
-            <SidebarItem icon={LayoutDashboard} label="DASHBOARD" active={currentView === 'DASHBOARD'} onClick={() => navigateTo('DASHBOARD')} />
+            <SidebarItem icon={LayoutDashboard} label="DASHBOARD" active={currentView === 'ADMIN' || currentView === 'DASHBOARD'} onClick={() => handleNav('')} />
 
             <div className="pt-4 pb-1 px-4 text-[10px] font-bold text-gray-600 uppercase tracking-widest">MODULES_01</div>
             
             <SidebarGroup icon={Users} label="CLIENTS" active={currentView === 'CLIENTS'}>
-                <SidebarSubItem label="> ALL RECORDS" onClick={() => navigateTo('CLIENTS')} />
-                <SidebarSubItem label="> KYC PENDING" onClick={() => navigateTo('CLIENTS')} />
-                <SidebarSubItem label="> DEFAULTERS" onClick={() => navigateTo('CLIENTS')} />
+                <SidebarSubItem label="> ALL RECORDS" onClick={() => handleNav('clients')} />
+                <SidebarSubItem label="> KYC PENDING" onClick={() => handleNav('clients')} />
+                <SidebarSubItem label="> DEFAULTERS" onClick={() => handleNav('clients')} />
             </SidebarGroup>
 
             <SidebarGroup icon={Briefcase} label="AGENTS" active={currentView === 'AGENTS'}>
-                <SidebarSubItem label="> ROSTER" onClick={() => navigateTo('AGENTS')} />
-                <SidebarSubItem label="> APPROVALS" onClick={() => navigateTo('AGENTS')} />
-                <SidebarSubItem label="> NETWORK TREE" onClick={() => navigateTo('AGENTS')} />
+                <SidebarSubItem label="> ROSTER" onClick={() => handleNav('agents')} />
+                <SidebarSubItem label="> APPROVALS" onClick={() => handleNav('agents')} />
+                <SidebarSubItem label="> NETWORK TREE" onClick={() => handleNav('agents')} />
             </SidebarGroup>
 
             <SidebarGroup icon={Map} label="PLOTS" active={currentView === 'PLOTS'}>
-                <SidebarSubItem label="> INVENTORY" onClick={() => navigateTo('PLOTS')} />
-                <SidebarSubItem label="> SOLD LOG" onClick={() => navigateTo('PLOTS')} />
+                <SidebarSubItem label="> INVENTORY" onClick={() => handleNav('plots')} />
+                <SidebarSubItem label="> SOLD LOG" onClick={() => handleNav('plots')} />
             </SidebarGroup>
 
             <div className="pt-4 pb-1 px-4 text-[10px] font-bold text-gray-600 uppercase tracking-widest">FINANCE_02</div>
 
             <SidebarGroup icon={CreditCard} label="PAYMENTS" active={currentView === 'PAYMENTS'}>
-                <SidebarSubItem label="> INBOUND LOG" onClick={() => navigateTo('PAYMENTS')} />
-                <SidebarSubItem label="> RECONCILIATION" onClick={() => navigateTo('PAYMENTS')} />
+                <SidebarSubItem label="> INBOUND LOG" onClick={() => handleNav('payments')} />
+                <SidebarSubItem label="> RECONCILIATION" onClick={() => handleNav('payments')} />
             </SidebarGroup>
 
             <SidebarGroup icon={Layers} label="COMMISSIONS" active={currentView === 'COMMISSIONS'}>
-                <SidebarSubItem label="> CALC ENGINE" onClick={() => navigateTo('COMMISSIONS')} />
-                <SidebarSubItem label="> HISTORY" onClick={() => navigateTo('COMMISSIONS')} />
+                <SidebarSubItem label="> CALC ENGINE" onClick={() => handleNav('commissions')} />
+                <SidebarSubItem label="> HISTORY" onClick={() => handleNav('commissions')} />
             </SidebarGroup>
 
             <SidebarGroup icon={Wallet} label="USDT_PAYOUTS" active={currentView === 'PAYOUTS'}>
-                <SidebarSubItem label="> REQUEST QUEUE" onClick={() => navigateTo('PAYOUTS')} />
-                <SidebarSubItem label="> PROCESS BATCH" onClick={() => navigateTo('PAYOUTS')} />
+                <SidebarSubItem label="> REQUEST QUEUE" onClick={() => handleNav('payouts')} />
+                <SidebarSubItem label="> PROCESS BATCH" onClick={() => handleNav('payouts')} />
             </SidebarGroup>
 
             <div className="pt-4 pb-1 px-4 text-[10px] font-bold text-gray-600 uppercase tracking-widest">SYSTEM_03</div>
 
-            <SidebarItem icon={Shield} label="PAGE CONTROL" active={currentView === 'PAGE_CONTROL'} onClick={() => navigateTo('PAGE_CONTROL')} />
-            <SidebarItem icon={FileText} label="CONTENT" active={currentView === 'CONTENT'} onClick={() => navigateTo('CONTENT')} />
-            <SidebarItem icon={PieChart} label="REPORTS" active={currentView === 'REPORTS'} onClick={() => navigateTo('REPORTS')} />
-            <SidebarItem icon={HelpCircle} label="TICKETS" active={currentView === 'SUPPORT'} onClick={() => navigateTo('SUPPORT')} />
-            <SidebarItem icon={Settings} label="CONFIG" active={currentView === 'SETTINGS'} onClick={() => navigateTo('SETTINGS')} />
+            <SidebarItem icon={Shield} label="PAGE CONTROL" active={currentView === 'PAGE_CONTROL'} onClick={() => handleNav('page-control')} />
+            <SidebarItem icon={FileText} label="CONTENT" active={currentView === 'CONTENT'} onClick={() => handleNav('content')} />
+            <SidebarItem icon={PieChart} label="REPORTS" active={currentView === 'REPORTS'} onClick={() => handleNav('reports')} />
+            <SidebarItem icon={HelpCircle} label="TICKETS" active={currentView === 'SUPPORT'} onClick={() => handleNav('support')} />
+            <SidebarItem icon={Settings} label="CONFIG" active={currentView === 'SETTINGS'} onClick={() => handleNav('settings')} />
         </nav>
 
         {/* Footer */}
@@ -165,7 +140,21 @@ export const AdminDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 md:p-4">
-            {renderContent()}
+            <Routes>
+                <Route index element={<AdminHome onViewChange={(view: string) => handleNav(view.toLowerCase().replace('_', '-'))} />} />
+                <Route path="agents" element={<AgentsView />} />
+                <Route path="payouts" element={<PayoutsView />} />
+                <Route path="commissions" element={<CommissionsView />} />
+                <Route path="payments" element={<PaymentsView />} />
+                <Route path="plots" element={<PlotsView />} />
+                <Route path="clients" element={<ClientsView />} />
+                <Route path="content" element={<ContentView />} />
+                <Route path="reports" element={<ReportsView />} />
+                <Route path="support" element={<SupportView />} />
+                <Route path="settings" element={<SettingsView />} />
+                <Route path="page-control" element={<PageControlView />} />
+                <Route path="*" element={<Navigate to="" replace />} />
+            </Routes>
         </div>
       </main>
     </div>

@@ -10,8 +10,11 @@ import { Button } from '../Button';
 import { UserProfile, Booking } from '../../types';
 import { DashboardHome } from './Home';
 import { PurchaseWizard } from './PurchaseWizard';
-import { MyPlotView, PaymentsView, ProfileView, SupportView } from './Views';
+import { MyPlotView, PaymentsView, ProfileView, SupportView, UpdatesView } from './Views';
 import { DocumentsView } from './Documents';
+import { usePageAccess } from '../../contexts/PageAccessContext';
+import { MaintenanceOverlay } from '../MaintenanceOverlay';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 interface DashboardProps {
   profile: UserProfile | null;
@@ -19,16 +22,17 @@ interface DashboardProps {
   onNavigate: (callback: () => void) => void;
 }
 
-type ViewState = 'DASHBOARD' | 'MY_PLOT' | 'PAYMENTS' | 'DOCUMENTS' | 'PROFILE' | 'SUPPORT' | 'PURCHASE_WIZARD';
-
 export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, onNavigate }) => {
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<ViewState>('DASHBOARD');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<any>(null); // Passed to wizard
   const [showNotifications, setShowNotifications] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  
+  const { settings } = usePageAccess();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Mock Notifications Data
   const notifications = [
@@ -62,16 +66,16 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
     }
   };
 
-  const navigateTo = (newView: ViewState) => {
+  const handleNav = (path: string) => {
       onNavigate(() => {
-          setView(newView);
+          navigate(path);
           setSidebarOpen(false);
       });
   };
 
   const startPurchase = (plot?: any) => {
       if(plot) setSelectedPlot(plot);
-      navigateTo('PURCHASE_WIZARD');
+      handleNav('purchase');
   };
 
   if (loading) {
@@ -85,25 +89,20 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
       );
   }
 
-  const renderContent = () => {
-      switch (view) {
-          case 'PURCHASE_WIZARD':
-              return <PurchaseWizard profile={profile} selectedPlot={selectedPlot} onCancel={() => navigateTo('DASHBOARD')} onSuccess={() => { fetchData(); navigateTo('DASHBOARD'); }} />;
-          case 'MY_PLOT':
-              return <MyPlotView bookings={bookings} profile={profile} onBuyNew={() => startPurchase()} />;
-          case 'PAYMENTS':
-              return <PaymentsView bookings={bookings} />;
-          case 'DOCUMENTS':
-              return <DocumentsView bookings={bookings} profile={profile} />;
-          case 'PROFILE':
-              return <ProfileView profile={profile} />;
-          case 'SUPPORT':
-              return <SupportView />;
-          case 'DASHBOARD':
-          default:
-              return <DashboardHome profile={profile} bookings={bookings} onBuyNew={() => startPurchase()} onViewChange={(v: ViewState) => navigateTo(v)} />;
-      }
-  };
+  // Current view based on path
+  const currentPath = location.pathname.split('/').pop()?.toUpperCase() || 'DASHBOARD';
+  const displayTitle = currentPath === 'CLIENT' ? 'Overview' : currentPath.replace('-', ' ');
+
+  // Navigation Items
+  const navItems = [
+      { id: '', label: 'Dashboard', icon: Home, key: 'DASHBOARD' },
+      { id: 'my-plot', label: 'My Plot(s)', icon: MapIcon, key: 'MY_PLOT' },
+      { id: 'payments', label: 'Payments', icon: CreditCard, key: 'PAYMENTS' },
+      { id: 'documents', label: 'Documents', icon: FileText, key: 'DOCUMENTS' },
+      { id: 'updates', label: 'Updates', icon: Settings, key: 'UPDATES' }, // Icon reused as placeholder
+      { id: 'support', label: 'Support', icon: Smartphone, key: 'SUPPORT' },
+      { id: 'profile', label: 'Profile', icon: Settings, key: 'PROFILE' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">
@@ -119,27 +118,37 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-deepblue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 shadow-2xl flex flex-col`}>
           <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gold-500 rounded flex items-center justify-center font-serif font-bold text-deepblue-900 text-lg">R</div>
+                  <div className="w-10 h-10 bg-gold-500 rounded-lg flex items-center justify-center font-serif font-bold text-deepblue-900 text-xl shadow-lg shadow-gold-500/20">R</div>
                   <div>
-                      <h1 className="font-serif font-bold text-lg tracking-wide">RAK Oasis</h1>
-                      <p className="text-[10px] text-gold-400 uppercase tracking-widest">Client Portal</p>
+                      <h1 className="font-serif font-bold text-lg tracking-wide text-white">RAK Oasis</h1>
+                      <p className="text-[10px] text-gold-400 uppercase tracking-widest font-bold">Client Portal</p>
                   </div>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/50 hover:text-white"><X size={20} /></button>
           </div>
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-              <NavItem icon={Home} label="Dashboard" active={view === 'DASHBOARD'} onClick={() => navigateTo('DASHBOARD')} />
-              <NavItem icon={MapIcon} label="My Plot(s)" active={view === 'MY_PLOT'} onClick={() => navigateTo('MY_PLOT')} />
-              <NavItem icon={CreditCard} label="Payments" active={view === 'PAYMENTS'} onClick={() => navigateTo('PAYMENTS')} />
-              <NavItem icon={FileText} label="Documents" active={view === 'DOCUMENTS'} onClick={() => navigateTo('DOCUMENTS')} />
-              <NavItem icon={Smartphone} label="Support" active={view === 'SUPPORT'} onClick={() => navigateTo('SUPPORT')} />
-              <NavItem icon={Settings} label="Profile" active={view === 'PROFILE'} onClick={() => navigateTo('PROFILE')} />
+              {navItems.map(item => {
+                  if (settings.client[item.key] === 'HIDDEN') return null;
+                  const isActive = item.id === '' 
+                    ? location.pathname === '/client' || location.pathname === '/client/'
+                    : location.pathname.includes(`/client/${item.id}`);
+                  
+                  return (
+                      <NavItem 
+                        key={item.key}
+                        icon={item.icon} 
+                        label={item.label} 
+                        active={isActive} 
+                        onClick={() => handleNav(item.id)} 
+                      />
+                  );
+              })}
           </nav>
 
-          <div className="p-4 border-t border-white/10 bg-deepblue-800/50">
+          <div className="p-4 border-t border-white/10 bg-deepblue-800/50 z-20">
               <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
                        <User size={20} className="text-gold-400" />
                   </div>
                   <div>
@@ -148,6 +157,7 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
                       <p className="text-xs text-gray-400">{profile?.agent_code || 'AGT-10523'}</p>
                   </div>
               </div>
+              
               <Button 
                 variant="outline-white" 
                 fullWidth 
@@ -163,8 +173,8 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
            <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 shrink-0 sticky top-0 z-30">
                <div className="flex items-center gap-4">
                    <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 text-gray-500 hover:text-deepblue-900"><Menu size={24} /></button>
-                   <h2 className="text-xl font-serif font-bold text-deepblue-900 hidden md:block">
-                       {view === 'DASHBOARD' ? 'Overview' : view.replace('_', ' ').charAt(0) + view.slice(1).toLowerCase().replace('_', ' ')}
+                   <h2 className="text-xl font-serif font-bold text-deepblue-900 hidden md:block capitalize">
+                       {displayTitle}
                    </h2>
                    {/* Mobile Title */}
                    <h2 className="text-lg font-serif font-bold text-deepblue-900 md:hidden">RAK Client</h2>
@@ -214,7 +224,17 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
            </header>
 
            <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-               {renderContent()}
+               <Routes>
+                  <Route index element={<DashboardHome profile={profile} bookings={bookings} onBuyNew={() => startPurchase()} onViewChange={(v: string) => handleNav(v.toLowerCase().replace('_', '-'))} />} />
+                  <Route path="purchase" element={<PurchaseWizard profile={profile} selectedPlot={selectedPlot} onCancel={() => handleNav('')} onSuccess={() => { fetchData(); handleNav(''); }} />} />
+                  <Route path="my-plot" element={settings.client['MY_PLOT'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <MyPlotView bookings={bookings} onBuyNew={() => startPurchase()} profile={profile} />} />
+                  <Route path="payments" element={settings.client['PAYMENTS'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <PaymentsView bookings={bookings} />} />
+                  <Route path="documents" element={settings.client['DOCUMENTS'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <DocumentsView bookings={bookings} profile={profile} />} />
+                  <Route path="updates" element={settings.client['UPDATES'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <UpdatesView />} />
+                  <Route path="profile" element={settings.client['PROFILE'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <ProfileView profile={profile} />} />
+                  <Route path="support" element={settings.client['SUPPORT'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <SupportView />} />
+                  <Route path="*" element={<Navigate to="" replace />} />
+               </Routes>
            </main>
        </div>
 
@@ -226,7 +246,6 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
                     onClick={() => setIsContactModalOpen(false)}
                 />
                 <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up">
-                    {/* Header / Banner */}
                     <div className="bg-deepblue-900 p-6 text-center relative">
                         <button 
                             onClick={() => setIsContactModalOpen(false)} 
@@ -242,7 +261,6 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
                         <p className="text-white/50 text-xs mt-1">{profile?.agent_code || 'AGT-10523'}</p>
                     </div>
                     
-                    {/* Contact Details */}
                     <div className="p-6 space-y-4">
                         <a href="tel:+917720001609" className="flex items-center gap-4 p-3 rounded-xl bg-gray-50 hover:bg-gold-50 border border-gray-100 hover:border-gold-200 transition group">
                             <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
