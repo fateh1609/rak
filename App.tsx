@@ -17,7 +17,7 @@ const PRELOAD_ASSETS = [
   "https://iili.io/fQnWtRe.jpg",  // Hero Image
 ];
 
-const MIN_LOADER_DURATION = 800; // 0.8 Seconds
+const MIN_LOADER_DURATION = 400; // 0.4 Seconds
 
 const App = () => {
   const [session, setSession] = useState<any>(null);
