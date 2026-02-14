@@ -66,7 +66,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       {/* Navigation */}
       <nav className="absolute w-full z-40 top-0 left-0 border-b border-white/10 backdrop-blur-md bg-deepblue-900/30 transition-all duration-300">
         <div className="container mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
-          <a href="#" className="block relative z-50 group">
+          <a href="#" className="block relative z-50 group" aria-label="RAK Oasis Home">
             {/* Logo */}
             <img 
               src={LOGO_URL} 
@@ -237,14 +237,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 </FadeIn>
 
                 <FadeIn delay={1100} className="flex-shrink-0 mx-4">
-                   <div 
+                   <button 
                      className="w-16 h-16 rounded-full border border-white/20 flex items-center justify-center bg-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/10 hover:border-gold-500/50 transition-all duration-300 group"
                      onClick={() => document.getElementById('overview')?.scrollIntoView({ behavior: 'smooth' })}
+                     aria-label="Scroll to Overview"
                    >
                       <div className="w-[30px] h-[48px] border-2 border-white/60 group-hover:border-gold-400 rounded-full flex justify-center pt-2 transition-all duration-300">
                         <div className="w-1.5 h-2.5 bg-white/80 group-hover:bg-gold-400 rounded-full animate-scroll-down"></div>
                       </div>
-                   </div>
+                   </button>
                 </FadeIn>
 
                 <FadeIn delay={1200} className="flex-1">
@@ -547,6 +548,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               {/* Card 1: Vision */}
               <div 
                 onClick={openLocation}
+                onKeyDown={(e) => e.key === 'Enter' && openLocation()}
+                role="button"
+                tabIndex={0}
                 className="bg-deepblue-900/95 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[20px] shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer h-full flex flex-col justify-between"
               >
                 <div>
@@ -564,6 +568,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               {/* Card 2: Numbers */}
               <div 
                 onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                onKeyDown={(e) => e.key === 'Enter' && document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                role="button"
+                tabIndex={0}
                 className="bg-deepblue-900/95 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[20px] shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer h-full flex flex-col justify-between"
               >
                 <div>
@@ -581,6 +588,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               {/* Card 3: Context */}
               <div 
                 onClick={openLocation}
+                onKeyDown={(e) => e.key === 'Enter' && openLocation()}
+                role="button"
+                tabIndex={0}
                 className="bg-deepblue-900/95 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[20px] shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer h-full flex flex-col justify-between"
               >
                 <div>
@@ -598,6 +608,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               {/* Card 4: Lead Magnet */}
               <div 
                 onClick={openAuth}
+                onKeyDown={(e) => e.key === 'Enter' && openAuth()}
+                role="button"
+                tabIndex={0}
                 className="bg-gold-500/95 backdrop-blur-xl border border-white/20 p-6 md:p-8 rounded-[20px] shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer h-full flex flex-col justify-between relative overflow-hidden"
               >
                 <div className="relative z-10">
@@ -679,13 +692,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
              </div>
 
              <div className="flex gap-6 order-2 md:order-3">
-                <a href="#" className="text-gray-400 hover:text-gold-500 transition-colors transform hover:-translate-y-1 duration-300">
+                <a href="#" aria-label="Visit us on LinkedIn" className="text-gray-400 hover:text-gold-500 transition-colors transform hover:-translate-y-1 duration-300">
                   <Linkedin size={18} />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-gold-500 transition-colors transform hover:-translate-y-1 duration-300">
+                <a href="#" aria-label="Visit us on Instagram" className="text-gray-400 hover:text-gold-500 transition-colors transform hover:-translate-y-1 duration-300">
                   <Instagram size={18} />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-gold-500 transition-colors transform hover:-translate-y-1 duration-300">
+                <a href="#" aria-label="Visit us on Twitter" className="text-gray-400 hover:text-gold-500 transition-colors transform hover:-translate-y-1 duration-300">
                   <Twitter size={18} />
                 </a>
              </div>

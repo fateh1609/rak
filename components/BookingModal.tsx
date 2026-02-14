@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
@@ -22,6 +23,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) =
       <div className="relative bg-white rounded-2xl w-full max-w-md p-6 md:p-8 shadow-2xl animate-fade-in-up">
         <button 
           onClick={onClose}
+          aria-label="Close modal"
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
         >
           <X size={24} />

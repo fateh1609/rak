@@ -133,7 +133,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
         
         {/* Header */}
         <div className="p-6 bg-deepblue-900 text-white relative shrink-0">
-            <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white transition p-1 rounded-full hover:bg-white/10">
+            <button onClick={onClose} aria-label="Close modal" className="absolute top-4 right-4 text-white/50 hover:text-white transition p-1 rounded-full hover:bg-white/10">
               <X size={20} />
             </button>
             
@@ -150,6 +150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                 <>
                     <button 
                         onClick={() => { setStep(1); setError(''); }} 
+                        aria-label="Go back"
                         className="absolute top-4 left-4 text-white/50 hover:text-white transition p-1 rounded-full hover:bg-white/10"
                     >
                         <ArrowLeft size={20} />

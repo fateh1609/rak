@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X, MapPin } from 'lucide-react';
 
@@ -35,6 +36,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose })
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close Map"
             className="text-gray-400 hover:text-white transition p-2 hover:bg-white/10 rounded-full"
           >
             <X size={24} />

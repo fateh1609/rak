@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { getInvestmentAdvice } from '../services/geminiService';
 import { ChatMessage } from '../types';
@@ -83,6 +84,7 @@ export const GeminiAdvisor: React.FC = () => {
           <button 
             onClick={handleSend}
             disabled={loading}
+            aria-label="Send Message"
             className="bg-deepblue-900 text-white p-2 rounded-lg hover:bg-deepblue-800 disabled:opacity-50 transition"
           >
             <Send size={18} />
