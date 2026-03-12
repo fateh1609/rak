@@ -251,7 +251,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 <FadeIn delay={1200} className="flex-1">
                    <div className="bg-deepblue-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl text-center hover:bg-deepblue-900/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-gold-500/10 h-32 flex flex-col justify-center">
                       <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-bold mb-1">From</div>
-                      <div className="text-3xl lg:text-4xl font-serif text-white mb-1 whitespace-nowrap">AED 101</div>
+                      <div className="text-3xl lg:text-4xl font-serif text-white mb-1 whitespace-nowrap">AED 131</div>
                       <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-semibold">Per sq/ft.</div>
                    </div>
                 </FadeIn>
@@ -354,7 +354,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     </div>
                     <div>
                       <h4 className="font-serif text-xl md:text-2xl text-deepblue-900 mb-2">Base Price</h4>
-                      <p className="text-gray-600 font-light text-lg">AED 101 per sq.ft / ₹ 2,520 per sq.ft</p>
+                      <p className="text-gray-600 font-light text-lg">AED 131 per sq.ft / ₹ 3,275 per sq.ft</p>
                     </div>
                   </div>
                 </FadeIn>
@@ -578,7 +578,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                         <BarChart3 size={32} />
                     </div>
                     <h3 className="text-xl md:text-2xl font-serif font-bold mb-1">Pricing</h3>
-                    <p className="text-gray-400 text-sm">Starts AED 101/sq.ft.</p>
+                    <p className="text-gray-400 text-sm">Starts AED 131/sq.ft.</p>
                 </div>
                 <div className="flex items-center text-gold-400 text-xs font-bold uppercase tracking-widest group-hover:gap-2 transition-all mt-6">
                     Payment Plan <ArrowRight size={14} className="ml-1" />
