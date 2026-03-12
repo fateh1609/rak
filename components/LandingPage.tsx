@@ -15,7 +15,7 @@ const LOGO_URL = "https://iili.io/fQj13Ge.webp";
 const GOV_LOGO = "https://raktda.com/wp-content/themes/raktda-corporate/assets/images/raktda-logo.svg";
 const RERA_LOGO = "https://dubailand.gov.ae/assets/img/land_department.svg"; 
 
-const APP_VERSION = '1.0.12'; 
+const APP_VERSION = '1.0.13'; 
 
 interface LandingPageProps {
     onLogin: (role: 'client' | 'agent' | 'admin') => void;
@@ -195,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <FadeIn delay={500}>
               <p className="text-base md:text-xl text-gray-200 leading-relaxed max-w-xl md:max-w-2xl font-light mb-8 md:mb-10 border-l-2 border-gold-500 pl-6">
                 Secure your legacy with premium freehold plots in Ras Al Khaimah's fastest-growing district. 
-                <span className="block mt-2 text-white font-medium">Starting from AED 101/sq.ft with a 5-Year Payment Plan.</span>
+                <span className="block mt-2 text-white font-medium">Starting from AED 131/sq.ft with a 5-Year Payment Plan.</span>
               </p>
             </FadeIn>
 

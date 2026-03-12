@@ -5,6 +5,8 @@ import { Calculator, CheckCircle2, Minus, Plus } from 'lucide-react';
 export const InvestmentCalculator: React.FC = () => {
   const [numPlots, setNumPlots] = useState<number>(1);
   const [plotType, setPlotType] = useState<PlotType>(PlotType.STANDARD);
+  const [downPaymentPct, setDownPaymentPct] = useState<number>(10);
+  const [tenureYears, setTenureYears] = useState<number>(5);
   const [result, setResult] = useState<CalculationResult>({
     totalAed: 0,
     totalInr: 0,
@@ -12,8 +14,8 @@ export const InvestmentCalculator: React.FC = () => {
     monthlyEmiAed: 0
   });
 
-  const BASE_PRICE_AED = 101;
-  const BASE_PRICE_INR = 2520;
+  const BASE_PRICE_AED = 131;
+  const BASE_PRICE_INR = 3275;
   const PLOT_SIZE_SQFT = 1000;
 
   useEffect(() => {
@@ -25,9 +27,9 @@ export const InvestmentCalculator: React.FC = () => {
     const totalSqFt = numPlots * PLOT_SIZE_SQFT;
     const totalAed = Math.round(totalSqFt * BASE_PRICE_AED * premiumMultiplier);
     const totalInr = Math.round(totalSqFt * BASE_PRICE_INR * premiumMultiplier);
-    const booking = Math.round(totalAed * 0.10);
+    const booking = Math.round(totalAed * (downPaymentPct / 100));
     const balance = totalAed - booking;
-    const emi = Math.round(balance / 60); // 5 years = 60 months
+    const emi = Math.round(balance / (tenureYears * 12));
 
     setResult({
       totalAed,
@@ -35,7 +37,7 @@ export const InvestmentCalculator: React.FC = () => {
       bookingAmountAed: booking,
       monthlyEmiAed: emi
     });
-  }, [numPlots, plotType]);
+  }, [numPlots, plotType, downPaymentPct, tenureYears]);
 
   const handleDecrement = () => {
     if (numPlots > 1) setNumPlots(prev => prev - 1);
@@ -103,11 +105,43 @@ export const InvestmentCalculator: React.FC = () => {
           )}
         </div>
 
+        {/* Down Payment & Tenure */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Down Payment (%)</label>
+            <select 
+              value={downPaymentPct}
+              onChange={(e) => setDownPaymentPct(Number(e.target.value))}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all bg-white text-gray-900 font-medium"
+            >
+              <option value={10}>10%</option>
+              <option value={20}>20%</option>
+              <option value={30}>30%</option>
+              <option value={40}>40%</option>
+              <option value={50}>50%</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Tenure (Years)</label>
+            <select 
+              value={tenureYears}
+              onChange={(e) => setTenureYears(Number(e.target.value))}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all bg-white text-gray-900 font-medium"
+            >
+              <option value={1}>1 Year</option>
+              <option value={2}>2 Years</option>
+              <option value={3}>3 Years</option>
+              <option value={4}>4 Years</option>
+              <option value={5}>5 Years</option>
+            </select>
+          </div>
+        </div>
+
         {/* Results Display - Hierarchy Flip */}
         <div className="bg-gray-50/50 rounded-2xl p-6 md:p-8 text-center space-y-6 border border-gray-100">
            {/* Hero EMI */}
            <div>
-             <p className="text-gray-500 text-xs md:text-sm font-medium uppercase tracking-wider mb-1">Monthly Installment (5 Years)</p>
+             <p className="text-gray-500 text-xs md:text-sm font-medium uppercase tracking-wider mb-1">Monthly Installment ({tenureYears} Years)</p>
              <div className="text-4xl sm:text-4xl md:text-5xl font-serif font-bold text-gold-500">
                AED {result.monthlyEmiAed.toLocaleString()}
              </div>
@@ -123,7 +157,7 @@ export const InvestmentCalculator: React.FC = () => {
                  <p className="text-xs text-gray-400">₹ {result.totalInr.toLocaleString()}</p>
               </div>
               <div className="sm:text-right mt-2 sm:mt-0">
-                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">10% Down Payment</p>
+                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{downPaymentPct}% Down Payment</p>
                  <p className="text-lg font-bold text-deepblue-900">AED {result.bookingAmountAed.toLocaleString()}</p>
               </div>
            </div>

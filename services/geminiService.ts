@@ -7,7 +7,7 @@ Key Project Details:
 - Total Area: 406 Acres.
 - Current Launch: Phase 1 (84.67 Acres).
 - Plot Size: Standard is 1000 sq.ft.
-- Pricing: 101 AED/sq.ft (approx 2520 INR/sq.ft).
+- Pricing: 131 AED/sq.ft (approx 3275 INR/sq.ft).
 - Premium: +5% for Garden Facing or Corner plots.
 - Payment Plan: 10% Booking, 90% over 5 Years (EMI).
 - Location: Ras Al Khaimah, a booming tourism and investment hub with new casinos (Wynn) and resorts coming up.
