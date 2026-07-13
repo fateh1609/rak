@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import { 
+import {
   LogOut, Users, Settings, Database, DollarSign, 
   Menu, X, Briefcase, FileText, HelpCircle, Layers, CreditCard,
   ChevronDown, ChevronRight, LayoutDashboard, Map, Wallet, PieChart, Shield
@@ -28,8 +27,7 @@ export const AdminDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleSignOut = () => {
     onLogout();
   };
 
@@ -71,37 +69,22 @@ export const AdminDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
             
             <SidebarGroup icon={Users} label="CLIENTS" active={currentView === 'CLIENTS'}>
                 <SidebarSubItem label="> ALL RECORDS" onClick={() => handleNav('clients')} />
-                <SidebarSubItem label="> KYC PENDING" onClick={() => handleNav('clients')} />
-                <SidebarSubItem label="> DEFAULTERS" onClick={() => handleNav('clients')} />
+                <SidebarSubItem label="> KYC PENDING" onClick={() => handleNav('clients?filter=kyc_pending')} />
+                <SidebarSubItem label="> DEFAULTERS" onClick={() => handleNav('clients?filter=defaulters')} />
             </SidebarGroup>
 
             <SidebarGroup icon={Briefcase} label="AGENTS" active={currentView === 'AGENTS'}>
                 <SidebarSubItem label="> ROSTER" onClick={() => handleNav('agents')} />
-                <SidebarSubItem label="> APPROVALS" onClick={() => handleNav('agents')} />
-                <SidebarSubItem label="> NETWORK TREE" onClick={() => handleNav('agents')} />
+                <SidebarSubItem label="> APPROVALS" onClick={() => handleNav('agents?filter=pending')} />
             </SidebarGroup>
 
-            <SidebarGroup icon={Map} label="PLOTS" active={currentView === 'PLOTS'}>
-                <SidebarSubItem label="> INVENTORY" onClick={() => handleNav('plots')} />
-                <SidebarSubItem label="> SOLD LOG" onClick={() => handleNav('plots')} />
-            </SidebarGroup>
+            <SidebarItem icon={Map} label="PLOTS" active={currentView === 'PLOTS'} onClick={() => handleNav('plots')} />
 
             <div className="pt-4 pb-1 px-4 text-[10px] font-bold text-gray-600 uppercase tracking-widest">FINANCE_02</div>
 
-            <SidebarGroup icon={CreditCard} label="PAYMENTS" active={currentView === 'PAYMENTS'}>
-                <SidebarSubItem label="> INBOUND LOG" onClick={() => handleNav('payments')} />
-                <SidebarSubItem label="> RECONCILIATION" onClick={() => handleNav('payments')} />
-            </SidebarGroup>
-
-            <SidebarGroup icon={Layers} label="COMMISSIONS" active={currentView === 'COMMISSIONS'}>
-                <SidebarSubItem label="> CALC ENGINE" onClick={() => handleNav('commissions')} />
-                <SidebarSubItem label="> HISTORY" onClick={() => handleNav('commissions')} />
-            </SidebarGroup>
-
-            <SidebarGroup icon={Wallet} label="USDT_PAYOUTS" active={currentView === 'PAYOUTS'}>
-                <SidebarSubItem label="> REQUEST QUEUE" onClick={() => handleNav('payouts')} />
-                <SidebarSubItem label="> PROCESS BATCH" onClick={() => handleNav('payouts')} />
-            </SidebarGroup>
+            <SidebarItem icon={CreditCard} label="PAYMENTS" active={currentView === 'PAYMENTS'} onClick={() => handleNav('payments')} />
+            <SidebarItem icon={Layers} label="COMMISSIONS" active={currentView === 'COMMISSIONS'} onClick={() => handleNav('commissions')} />
+            <SidebarItem icon={Wallet} label="USDT_PAYOUTS" active={currentView === 'PAYOUTS'} onClick={() => handleNav('payouts')} />
 
             <div className="pt-4 pb-1 px-4 text-[10px] font-bold text-gray-600 uppercase tracking-widest">SYSTEM_03</div>
 

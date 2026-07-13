@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS: PageSettings = {
     'MY_PLOT': PageStatus.ENABLED,
     'PAYMENTS': PageStatus.ENABLED,
     'DOCUMENTS': PageStatus.ENABLED,
+    'UPDATES': PageStatus.ENABLED,
     'SUPPORT': PageStatus.ENABLED,
     'PROFILE': PageStatus.ENABLED
   },
@@ -23,6 +24,7 @@ const DEFAULT_SETTINGS: PageSettings = {
     'EARNINGS': PageStatus.ENABLED,
     'LEADERBOARD': PageStatus.ENABLED,
     'MARKETING': PageStatus.ENABLED,
+    'TRAINING': PageStatus.ENABLED,
     'PROFILE': PageStatus.ENABLED,
     'SUPPORT': PageStatus.ENABLED
   }

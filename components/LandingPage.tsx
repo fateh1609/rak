@@ -18,7 +18,7 @@ const RERA_LOGO = "https://dubailand.gov.ae/assets/img/land_department.svg";
 const APP_VERSION = '1.0.13'; 
 
 interface LandingPageProps {
-    onLogin: (role: 'client' | 'agent' | 'admin') => void;
+    onLogin: (token: string, profile: import('../types').UserProfile) => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {

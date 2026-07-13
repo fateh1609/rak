@@ -1,65 +1,101 @@
 
-import React from 'react';
-import { Clock, AlertTriangle } from 'lucide-react';
-import { SectionTitle, IndButton } from './Shared';
+import React, { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
+import { SectionTitle, IndButton, IndTable, StatusTag } from './Shared';
+import { api } from '../../lib/api';
 
 export const CommissionsView = () => {
+    const [commissions, setCommissions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [tab, setTab] = useState<'PENDING' | 'ALL'>('PENDING');
+    const [busy, setBusy] = useState<string | null>(null);
+
+    const fetchCommissions = () => {
+        setLoading(true);
+        api.get<{ commissions: any[] }>('/admin/commissions')
+            .then(({ commissions: c }) => setCommissions(c))
+            .catch(() => setCommissions([]))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(fetchCommissions, []);
+
+    const approve = async (id: string) => {
+        setBusy(id);
+        try {
+            await api.patch(`/admin/commissions/${id}/approve`);
+            fetchCommissions();
+        } catch (e: any) {
+            alert(e?.message || 'Approval failed');
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    const pending = commissions.filter(c => c.status === 'calculated_pending_approval');
+    const shown = tab === 'PENDING' ? pending : commissions;
+    const pendingTotal = pending.reduce((s, c) => s + Number(c.amount), 0);
+    const approvedTotal = commissions.filter(c => c.status !== 'calculated_pending_approval').reduce((s, c) => s + Number(c.amount), 0);
+
     return (
         <div className="space-y-6">
-            <SectionTitle 
-                title="COMMISSION_CALCULATION"
+            <SectionTitle
+                title="COMMISSION_LEDGER"
                 actions={
                     <>
-                        <IndButton active>CALCULATE</IndButton>
-                        <IndButton>HISTORY</IndButton>
-                        <IndButton>SETTINGS</IndButton>
+                        <IndButton active={tab === 'PENDING'} onClick={() => setTab('PENDING')}>PENDING ({pending.length})</IndButton>
+                        <IndButton active={tab === 'ALL'} onClick={() => setTab('ALL')}>FULL_HISTORY ({commissions.length})</IndButton>
                     </>
                 }
             />
 
-            <div className="bg-white border border-black p-4 mb-6">
-                <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
-                    <h3 className="font-bold text-lg">CYCLE: FEBRUARY 2026</h3>
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 text-xs font-bold border border-yellow-200 flex items-center gap-1">
-                        <Clock size={12} /> READY TO CALCULATE
-                    </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white border border-black p-3">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase">PENDING APPROVAL</p>
+                    <p className="text-xl font-bold text-yellow-700">₹{pendingTotal.toLocaleString('en-IN')}</p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs mb-6">
-                    <div>
-                        <p className="font-bold text-gray-500 mb-1">TOTAL COLLECTIONS</p>
-                        <p className="text-xl font-bold">₹4,50,00,000</p>
-                        <p className="text-gray-500">1,210 verified payments</p>
-                    </div>
-                    <div>
-                        <p className="font-bold text-gray-500 mb-1">GROSS COMMISSION (10%)</p>
-                        <p className="text-xl font-bold">₹45,00,000</p>
-                    </div>
-                    <div>
-                        <p className="font-bold text-gray-500 mb-1">NET PAYABLE (AFTER TDS)</p>
-                        <p className="text-xl font-bold text-blue-600">₹40,50,000</p>
-                    </div>
+                <div className="bg-white border border-black p-3">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase">APPROVED / PAID</p>
+                    <p className="text-xl font-bold text-green-700">₹{approvedTotal.toLocaleString('en-IN')}</p>
                 </div>
-
-                <div className="bg-gray-100 border border-black p-3 mb-6 font-mono text-xs">
-                    <p className="font-bold mb-2 underline">PREVIEW BREAKDOWN:</p>
-                    <div className="flex justify-between py-1"><span>1. UNILEVEL (75%)</span> <span>₹33,75,000</span></div>
-                    <div className="flex justify-between py-1 ml-4 text-gray-600"><span>L1 (8%) - 287 agents</span> <span>₹20,25,000</span></div>
-                    <div className="flex justify-between py-1 ml-4 text-gray-600"><span>L2-L5 (7%)</span> <span>₹13,50,000</span></div>
-                    <div className="flex justify-between py-1"><span>2. INFINITY BONUS (20%)</span> <span>₹9,00,000</span></div>
-                    <div className="flex justify-between py-1"><span>3. LEADERBOARD (5%)</span> <span>₹2,25,000</span></div>
-                    <div className="flex justify-between py-1 border-t border-gray-400 mt-1 pt-1 font-bold"><span>TOTAL GROSS</span> <span>₹45,00,000</span></div>
+                <div className="bg-white border border-black p-3">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase">RATES</p>
+                    <p className="text-xs font-bold mt-1">L1 8% • L2 3% • L3 2% • L4 1% • L5 1%</p>
                 </div>
-
-                <div className="flex gap-4 items-center bg-yellow-50 border border-yellow-200 p-2 mb-4 text-xs">
-                    <AlertTriangle size={16} className="text-yellow-600"/>
-                    <span className="font-bold text-yellow-800">WARNING: 3 agents close to rank advancement. Manual review recommended.</span>
-                </div>
-
-                <button className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 text-sm uppercase border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-none transition-all">
-                    [ EXECUTE CALCULATION SCRIPT - FEB 2026 ]
-                </button>
             </div>
+
+            {loading ? (
+                <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" size={24} /></div>
+            ) : (
+                <IndTable headers={['DATE', 'AGENT', 'TYPE', 'LEVEL', 'AMOUNT', 'STATUS', 'ACTION']}>
+                    {shown.length === 0 && (
+                        <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">NO_RECORDS</td></tr>
+                    )}
+                    {shown.map(c => (
+                        <tr key={c.id} className="hover:bg-gray-50 text-black">
+                            <td className="px-3 py-2 text-xs">{new Date(c.created_at).toLocaleDateString('en-GB')}</td>
+                            <td className="px-3 py-2 font-bold">{c.agent_name}<br /><span className="text-[10px] text-gray-500 font-normal">{c.agent_code}</span></td>
+                            <td className="px-3 py-2 text-xs">{c.type}</td>
+                            <td className="px-3 py-2 text-center">{c.level ? `L${c.level}` : '—'}</td>
+                            <td className="px-3 py-2 font-bold">₹{Number(c.amount).toLocaleString('en-IN')}</td>
+                            <td className="px-3 py-2">
+                                <StatusTag status={c.status === 'calculated_pending_approval' ? 'PENDING' : c.status.toUpperCase()} />
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                                {c.status === 'calculated_pending_approval' ? (
+                                    <button disabled={busy === c.id} onClick={() => approve(c.id)} className="bg-green-600 text-white px-2 py-1 text-[10px] font-bold hover:bg-green-700 disabled:opacity-50">[APPROVE_&_CREDIT]</button>
+                                ) : (
+                                    <span className="text-[10px] text-gray-400">CREDITED</span>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </IndTable>
+            )}
+
+            <p className="text-[10px] text-gray-500 font-mono">
+                NOTE: Approving a commission credits the agent's wallet balance immediately.
+            </p>
         </div>
     );
 };

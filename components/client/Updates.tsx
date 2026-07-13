@@ -1,6 +1,33 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, CheckCircle, Camera, Calendar, Target, Newspaper } from 'lucide-react';
+import { api } from '../../lib/api';
+
+const NewsFeed = () => {
+    const [updates, setUpdates] = useState<any[]>([]);
+    useEffect(() => {
+        api.get<{ updates: any[] }>('/updates')
+            .then(({ updates: u }) => setUpdates(u))
+            .catch(() => setUpdates([]));
+    }, []);
+
+    if (!updates.length) {
+        return <p className="text-sm text-gray-400 text-center py-8">No announcements yet.</p>;
+    }
+    return (
+        <div className="space-y-4">
+            {updates.map(u => (
+                <div key={u.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mb-2 inline-block">
+                        {new Date(u.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                    <h5 className="font-bold text-sm text-gray-900">{u.title}</h5>
+                    <p className="text-xs text-gray-500 mt-1">{u.body}</p>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 export const UpdatesView = () => (
     <div className="space-y-8 animate-fade-in-up pb-20">
@@ -91,20 +118,7 @@ export const UpdatesView = () => (
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h4 className="font-bold text-deepblue-900 mb-4 flex items-center gap-2"><Newspaper size={18} /> News & Announcements</h4>
-                <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mb-2 inline-block">Feb 01, 2026</span>
-                        <h5 className="font-bold text-sm text-gray-900">Swimming Pool Construction Started!</h5>
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">Construction of the Olympic-size pool has officially begun. Expected completion June 2026.</p>
-                        <button className="text-xs font-bold text-gold-600 mt-2 hover:underline">Read More</button>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <span className="text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-0.5 rounded mb-2 inline-block">Jan 25, 2026</span>
-                        <h5 className="font-bold text-sm text-gray-900 flex items-center gap-1"><CheckCircle size={12} className="text-green-600" /> Block A Ahead of Schedule</h5>
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">Great news for plot owners! Works are progressing faster than anticipated.</p>
-                        <button className="text-xs font-bold text-gold-600 mt-2 hover:underline">Read More</button>
-                    </div>
-                </div>
+                <NewsFeed />
             </div>
         </div>
     </div>

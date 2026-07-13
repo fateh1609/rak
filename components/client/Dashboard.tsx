@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import { 
+import { api } from '../../lib/api';
+import {
   LogOut, User, FileText, Map as MapIcon, Home, CreditCard, 
   Smartphone, Bell, Menu, X, Settings, Shield, CheckCircle, AlertCircle,
   Phone, Mail
@@ -20,6 +20,7 @@ interface DashboardProps {
   profile: UserProfile | null;
   onLogout: () => void;
   onNavigate: (callback: () => void) => void;
+  onProfileRefresh?: () => void;
 }
 
 export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, onNavigate }) => {
@@ -51,13 +52,8 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
     setLoading(true);
     try {
         if (profile) {
-             const { data } = await supabase
-            .from('bookings')
-            .select(`*, plot_details:plots(*)`)
-            .eq('user_id', profile.id)
-            .in('status', ['CONFIRMED', 'PENDING_VERIFICATION']);
-            
-            if (data) setBookings(data as Booking[]);
+            const { bookings: data } = await api.get<{ bookings: Booking[] }>('/bookings/my');
+            setBookings(data.filter(b => b.status !== 'CANCELLED'));
         }
     } catch (e) {
         console.error("Error fetching data:", e);

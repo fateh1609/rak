@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import { 
-  LogOut, Users, Award, DollarSign, Home, Smartphone, User, 
-  Globe, Briefcase, Plus, Menu, X, ChevronRight, Bell
+import {
+  LogOut, Users, Award, DollarSign, Home, Smartphone, User,
+  Globe, Briefcase, Plus, Menu, X, ChevronRight, Bell, GraduationCap
 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { Button } from '../Button';
+import { api } from '../../lib/api';
 import { DashboardHome } from './Home';
 import { NetworkView } from './Network';
 import { SalesView } from './Sales';
@@ -14,6 +14,7 @@ import { EarningsView } from './Earnings';
 import { LeaderboardView } from './Leaderboard';
 import { RecruitAgent } from './Recruit';
 import { MarketingView } from './Marketing';
+import { TrainingView } from './Training';
 import { ProfileView } from './Profile';
 import { SupportView } from './Support';
 import { usePageAccess } from '../../contexts/PageAccessContext';
@@ -24,16 +25,23 @@ interface DashboardProps {
   profile: UserProfile | null;
   onLogout: () => void;
   onNavigate: (callback: () => void) => void;
+  onProfileRefresh?: () => void;
 }
 
 export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState<any>(null);
   const { settings } = usePageAccess();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  React.useEffect(() => {
+    api.get<{ stats: any }>('/network/stats')
+      .then(({ stats: s }) => setStats(s))
+      .catch(() => setStats(null));
+  }, []);
+
+  const handleSignOut = () => {
     onLogout();
   };
 
@@ -64,6 +72,7 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
       { id: 'leaderboard', label: 'Leaderboard', icon: Award, key: 'LEADERBOARD' },
       { divider: true },
       { id: 'marketing', label: 'Marketing', icon: Globe, key: 'MARKETING' },
+      { id: 'training', label: 'Training', icon: GraduationCap, key: 'TRAINING' },
       { id: 'profile', label: 'Profile', icon: User, key: 'PROFILE' },
       { id: 'support', label: 'Support', icon: Smartphone, key: 'SUPPORT' },
   ];
@@ -114,35 +123,40 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
          </nav>
 
          {/* Rank Progress Widget */}
-         <div className="p-5 bg-deepblue-800/50 border-t border-white/10">
-             <div className="flex justify-between text-xs text-gray-300 mb-2 font-medium">
-                 <span>Rank 3: Area Manager</span>
-                 <span className="text-gold-400 font-bold">80%</span>
-             </div>
-             <div className="w-full bg-deepblue-950 rounded-full h-2 mb-3 overflow-hidden border border-white/5">
-                 <div className="bg-gradient-to-r from-gold-600 to-gold-400 h-full rounded-full shadow-[0_0_10px_rgba(197,160,40,0.5)]" style={{ width: '80%' }}></div>
-             </div>
-             <div className="flex justify-between items-center">
-                <p className="text-[10px] text-gray-400">Next: Rank 4</p>
-                <button onClick={() => handleNav('')} className="text-[10px] text-gold-400 font-bold uppercase tracking-wider hover:text-white transition flex items-center gap-1">
-                    Details <ChevronRight size={10} />
-                </button>
-             </div>
-         </div>
+         {(() => {
+             const RANK_NAMES: Record<number, string> = { 1: 'Agent', 2: 'Senior Agent', 3: 'Area Manager', 4: 'Zonal Head', 5: 'President' };
+             const rank = stats?.rank || profile?.rank || 1;
+             return (
+                 <div className="p-5 bg-deepblue-800/50 border-t border-white/10">
+                     <div className="flex justify-between text-xs text-gray-300 mb-2 font-medium">
+                         <span>Rank {rank}: {RANK_NAMES[rank]}</span>
+                     </div>
+                     <div className="w-full bg-deepblue-950 rounded-full h-2 mb-3 overflow-hidden border border-white/5">
+                         <div className="bg-gradient-to-r from-gold-600 to-gold-400 h-full rounded-full shadow-[0_0_10px_rgba(197,160,40,0.5)]" style={{ width: `${(rank / 5) * 100}%` }}></div>
+                     </div>
+                     <div className="flex justify-between items-center">
+                        <p className="text-[10px] text-gray-400">{rank < 5 ? `Next: ${RANK_NAMES[rank + 1]}` : 'Top Rank Achieved'}</p>
+                        <button onClick={() => handleNav('')} className="text-[10px] text-gold-400 font-bold uppercase tracking-wider hover:text-white transition flex items-center gap-1">
+                            Details <ChevronRight size={10} />
+                        </button>
+                     </div>
+                 </div>
+             );
+         })()}
 
          {/* Quick Stats Footer */}
          <div className="p-5 bg-deepblue-900 border-t border-white/10 text-xs text-gray-400 space-y-2">
              <div className="flex justify-between">
                  <span>📦 Direct Team:</span>
-                 <span className="text-white font-bold">8</span>
+                 <span className="text-white font-bold">{stats?.direct_team ?? '—'}</span>
              </div>
              <div className="flex justify-between">
                  <span>🌐 Total Network:</span>
-                 <span className="text-white font-bold">43</span>
+                 <span className="text-white font-bold">{stats?.total_network ?? '—'}</span>
              </div>
              <div className="flex justify-between">
                  <span>💵 This Month:</span>
-                 <span className="text-green-400 font-bold">₹4.8L</span>
+                 <span className="text-green-400 font-bold">₹{Number(stats?.month_earnings || 0).toLocaleString('en-IN')}</span>
              </div>
          </div>
       </aside>
@@ -189,12 +203,13 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
           <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
               <Routes>
                   <Route index element={<DashboardHome profile={profile} onChangeView={(v: string) => handleNav(v.toLowerCase())} />} />
-                  <Route path="network" element={settings.agent['NETWORK'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <NetworkView onRecruit={() => handleNav('recruit')} />} />
+                  <Route path="network" element={settings.agent['NETWORK'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <NetworkView onRecruit={() => handleNav('recruit')} profile={profile} />} />
                   <Route path="recruit" element={<RecruitAgent onCancel={() => handleNav('network')} onSuccess={() => handleNav('network')} />} />
                   <Route path="sales" element={settings.agent['SALES'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <SalesView />} />
                   <Route path="earnings" element={settings.agent['EARNINGS'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <EarningsView />} />
                   <Route path="leaderboard" element={settings.agent['LEADERBOARD'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <LeaderboardView />} />
                   <Route path="marketing" element={settings.agent['MARKETING'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <MarketingView profile={profile} />} />
+                  <Route path="training" element={settings.agent['TRAINING'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <TrainingView />} />
                   <Route path="profile" element={settings.agent['PROFILE'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <ProfileView profile={profile} />} />
                   <Route path="support" element={settings.agent['SUPPORT'] === 'DISABLED' ? <MaintenanceOverlay onBack={() => handleNav('')} /> : <SupportView />} />
                   <Route path="*" element={<Navigate to="" replace />} />

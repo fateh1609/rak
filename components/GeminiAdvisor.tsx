@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { getInvestmentAdvice } from '../services/geminiService';
+import { api } from '../lib/api';
 import { ChatMessage } from '../types';
 import { Bot, Send, Loader2, Sparkles } from 'lucide-react';
 
@@ -21,8 +21,8 @@ export const GeminiAdvisor: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await getInvestmentAdvice(userMsg);
-      setMessages(prev => [...prev, { role: 'model', text: response }]);
+      const { answer } = await api.post<{ answer: string }>('/advisor', { question: userMsg });
+      setMessages(prev => [...prev, { role: 'model', text: answer }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'model', text: "Sorry, I couldn't connect to the server.", isError: true }]);
     } finally {

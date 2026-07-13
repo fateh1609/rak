@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from './lib/supabaseClient';
-import { UserProfile, UserRank } from './types';
+import { api } from './lib/api';
+import { UserProfile } from './types';
 import { ClientDashboard } from './components/client/Dashboard';
 import { AdminDashboard } from './components/admin/Dashboard';
 import { AgentDashboard } from './components/agent/Dashboard';
@@ -11,7 +11,7 @@ import { PageAccessProvider } from './contexts/PageAccessContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { SessionManager } from './lib/session';
 
 // Critical assets to preload
@@ -24,9 +24,8 @@ const MIN_LOADER_DURATION = 400; // 0.4 Seconds
 
 // Wrapper component to handle routing logic
 const AppContent = () => {
-  const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  
+
   // Loading States
   const [isSessionChecked, setIsSessionChecked] = useState(false);
   const [areAssetsLoaded, setAreAssetsLoaded] = useState(false);
@@ -35,14 +34,12 @@ const AppContent = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const sessionRef = useRef(session);
+  const profileRef = useRef(profile);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
-    sessionRef.current = session;
-  }, [session]);
+    profileRef.current = profile;
+  }, [profile]);
 
   // --- INACTIVITY MONITOR ---
   useEffect(() => {
@@ -56,9 +53,7 @@ const AppContent = () => {
     window.addEventListener('scroll', handleActivity);
 
     const interval = setInterval(() => {
-        const currentUser = SessionManager.getSession();
-        // If we think we are logged in (profile exists) but session manager says no (expired), logout
-        if (profile && !currentUser && !session?.user?.id.startsWith('sb-')) { // Exclude real supabase sessions from this check
+        if (profileRef.current && SessionManager.isInactive()) {
             console.log("Auto-logout triggered by inactivity");
             handleLogout();
         }
@@ -71,64 +66,37 @@ const AppContent = () => {
         window.removeEventListener('scroll', handleActivity);
         clearInterval(interval);
     };
-  }, [profile, session]);
+  }, []);
 
   useEffect(() => {
     // 1. Asset Preloading
     const loadAssets = async () => {
       const promises = PRELOAD_ASSETS.map((src) => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const img = new Image();
           img.src = src;
           img.onload = resolve;
-          img.onerror = resolve; 
+          img.onerror = resolve;
         });
       });
       await Promise.all(promises);
       setAreAssetsLoaded(true);
     };
 
-    // 2. Auth Check
+    // 2. Auth Check: stored JWT -> GET /auth/me
     const checkAuth = async () => {
       try {
-        // A. Check for Token in URL (Highest Priority for Mock)
-        const urlToken = searchParams.get('token');
-        if (urlToken) {
-            const user = SessionManager.verifyToken(urlToken);
-            if (user) {
-                // Initialize Session from URL
-                SessionManager.setSession(urlToken);
-                setProfile(user);
-                setSession({ user: { id: user.id, email: user.email } });
-                setIsSessionChecked(true);
-                return; // Skip other checks
-            } else {
-                // Invalid token in URL, clean it up
-                setSearchParams({}, { replace: true });
-            }
-        }
-
-        // B. Check Supabase (Real Auth)
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setSession(session);
-          await fetchProfile(session.user.id);
+        if (SessionManager.hasToken() && !SessionManager.isInactive()) {
+          const { profile: me } = await api.get<{ profile: UserProfile }>('/auth/me');
+          setProfile(me);
+          SessionManager.cacheProfile(me);
+          SessionManager.updateActivity();
         } else {
-          // C. Check Local Storage (Persisted Mock)
-          const encryptedUser = SessionManager.getSession();
-          if (encryptedUser) {
-             setProfile(encryptedUser);
-             setSession({ user: { id: encryptedUser.id, email: encryptedUser.email } });
-             
-             // Ensure URL reflects the token (Restore ?token=...)
-             const storedToken = localStorage.getItem('rak_session_token');
-             if (storedToken) {
-                 setSearchParams({ token: storedToken }, { replace: true });
-             }
-          }
+          SessionManager.clearSession();
         }
       } catch (e) {
         console.error("Auth check failed", e);
+        SessionManager.clearSession();
       } finally {
         setIsSessionChecked(true);
       }
@@ -141,12 +109,12 @@ const AppContent = () => {
     const handleOnline = async () => {
         setIsReconnecting(true);
         const delayPromise = new Promise(resolve => setTimeout(resolve, MIN_LOADER_DURATION));
-        
-        if (sessionRef.current?.user?.id) {
+
+        if (profileRef.current) {
             try {
-               await fetchProfile(sessionRef.current.user.id);
-               const { data } = await supabase.auth.getSession();
-               if(data.session) await supabase.auth.refreshSession(); 
+               const { profile: me } = await api.get<{ profile: UserProfile }>('/auth/me');
+               setProfile(me);
+               SessionManager.cacheProfile(me);
             } catch (e) {
                 console.error("Re-link failed", e);
             }
@@ -158,112 +126,42 @@ const AppContent = () => {
     };
 
     const handleOffline = () => setIsOnline(false);
-    
+
+    // 5. Global 401 handler (fired by lib/api.ts)
+    const handleUnauthorized = () => {
+        SessionManager.clearSession();
+        setProfile(null);
+        navigate('/', { replace: true });
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('rak:unauthorized', handleUnauthorized);
 
     loadAssets();
     checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setSession(session);
-        fetchProfile(session.user.id);
-      } else {
-        if (!SessionManager.getSession()) {
-            setSession(null);
-            setProfile(null);
-        }
-      }
-    });
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      subscription.unsubscribe();
+      window.removeEventListener('rak:unauthorized', handleUnauthorized);
     };
-  }, []); 
+  }, []);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-        if (userId === 'mock-user-id-123') return;
-
-        const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-        if (data) {
-            setProfile(data as UserProfile);
-        } else {
-            setProfile({
-                id: userId,
-                full_name: 'Valued Client',
-                email: '',
-                mobile: '',
-                role: 'client',
-                rank: UserRank.AGENT,
-                wallet_balance: 0,
-                kyc_verified: false
-            });
-        }
-    } catch (e) {
-        console.error("Error fetching profile", e);
-    }
-  };
-
-  const handleMockLogin = async (role: 'client' | 'agent' | 'admin', customData?: Partial<UserProfile>) => {
-    setIsTransitioning(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const defaultName = role === 'admin' ? 'System Administrator' : role === 'agent' ? 'Rajesh Kumar' : 'Amit Sharma';
-    const defaultEmail = `${role}@rakoasis.com`;
-
-    const mockProfile: UserProfile = {
-      id: 'mock-user-id-123',
-      full_name: customData?.full_name || defaultName,
-      email: customData?.email || defaultEmail,
-      mobile: customData?.mobile || '+971 50 123 4567',
-      role: role,
-      agent_code: role === 'agent' ? 'AGT-10523' : role === 'client' ? 'AGT-10523' : undefined,
-      rank: role === 'agent' ? UserRank.AREA_MANAGER : UserRank.AGENT,
-      wallet_balance: role === 'agent' ? 434047 : 0,
-      kyc_verified: true
-    };
-    
-    // Create Session
-    const token = SessionManager.createSession(mockProfile);
-
-    // Update URL with Token
-    setSearchParams({ token }, { replace: true });
-
-    setProfile(mockProfile);
-    setSession({ user: { id: mockProfile.id, email: mockProfile.email } });
-    
-    setIsTransitioning(false); 
+  const handleLogin = (token: string, loggedInProfile: UserProfile) => {
+    SessionManager.start(token, loggedInProfile);
+    setProfile(loggedInProfile);
   };
 
   const handleLogout = async () => {
       setIsTransitioning(true);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // 1. Clear Storage
+
       SessionManager.clearSession();
-      
-      // 2. Sign out Supabase (if active)
-      await supabase.auth.signOut();
-
-      // 3. Clear State
-      setSession(null);
       setProfile(null);
-
-      // 4. Remove Token from URL & Navigate Home
-      setSearchParams({}, { replace: true });
       navigate('/', { replace: true });
-      
+
       setIsTransitioning(false);
   }
 
@@ -275,11 +173,21 @@ const AppContent = () => {
       setIsTransitioning(false);
   };
 
+  const refreshProfile = async () => {
+      try {
+          const { profile: me } = await api.get<{ profile: UserProfile }>('/auth/me');
+          setProfile(me);
+          SessionManager.cacheProfile(me);
+      } catch (e) {
+          console.error("Profile refresh failed", e);
+      }
+  };
+
   const isInitialLoad = !(isSessionChecked && areAssetsLoaded && minTimeElapsed);
   const shouldShowLoader = isInitialLoad || !isOnline || isTransitioning || isReconnecting;
-  
+
   let loaderStatus: 'INITIAL' | 'OFFLINE' | 'RECONNECTING' | 'TRANSITION' = 'INITIAL';
-  
+
   if (!isOnline) loaderStatus = 'OFFLINE';
   else if (isReconnecting) loaderStatus = 'RECONNECTING';
   else if (isTransitioning) loaderStatus = 'TRANSITION';
@@ -287,36 +195,36 @@ const AppContent = () => {
 
   return (
     <>
-      <Preloader 
-        logoUrl={PRELOAD_ASSETS[0]} 
-        isLoading={shouldShowLoader} 
-        status={loaderStatus} 
+      <Preloader
+        logoUrl={PRELOAD_ASSETS[0]}
+        isLoading={shouldShowLoader}
+        status={loaderStatus}
       />
-      
+
       {isSessionChecked && (
         <div className={shouldShowLoader ? 'fixed inset-0 -z-10' : ''}>
            <Routes>
               {/* Landing Page */}
               <Route path="/" element={
-                profile ? <Navigate to={`/${profile.role}`} replace /> : <LandingPage onLogin={handleMockLogin} />
+                profile ? <Navigate to={`/${profile.role}`} replace /> : <LandingPage onLogin={handleLogin} />
               } />
 
               {/* Protected Routes */}
               <Route path="/client/*" element={
-                profile?.role === 'client' ? 
-                <ClientDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> : 
+                profile?.role === 'client' ?
+                <ClientDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} onProfileRefresh={refreshProfile} /> :
                 <Navigate to="/" replace />
               } />
-              
+
               <Route path="/agent/*" element={
-                profile?.role === 'agent' ? 
-                <AgentDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> : 
+                profile?.role === 'agent' ?
+                <AgentDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} onProfileRefresh={refreshProfile} /> :
                 <Navigate to="/" replace />
               } />
-              
+
               <Route path="/admin/*" element={
-                profile?.role === 'admin' ? 
-                <AdminDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> : 
+                profile?.role === 'admin' ?
+                <AdminDashboard profile={profile} onLogout={handleLogout} onNavigate={handleNavigate} /> :
                 <Navigate to="/" replace />
               } />
 

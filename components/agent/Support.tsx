@@ -254,8 +254,30 @@ const SocialIcon = ({ children }: any) => (
 
 const CreateTicketModal = ({ isOpen, onClose }: any) => {
     const [submitted, setSubmitted] = useState(false);
+    const [category, setCategory] = useState('Commissions & Earnings');
+    const [subject, setSubject] = useState('');
+    const [description, setDescription] = useState('');
+    const [error, setError] = useState('');
+    const [busy, setBusy] = useState(false);
 
     if (!isOpen) return null;
+
+    const handleSubmit = async () => {
+        setError('');
+        if (!subject || !description) { setError('Subject and description are required.'); return; }
+        setBusy(true);
+        try {
+            const { api } = await import('../../lib/api');
+            await api.post('/tickets', { subject: `[${category}] ${subject}`, message: description });
+            setSubmitted(true);
+            setSubject('');
+            setDescription('');
+        } catch (e: any) {
+            setError(e?.message || 'Submission failed.');
+        } finally {
+            setBusy(false);
+        }
+    };
 
     if (submitted) {
         return (
@@ -266,7 +288,7 @@ const CreateTicketModal = ({ isOpen, onClose }: any) => {
                         <CheckCircle size={32} />
                     </div>
                     <h3 className="text-xl font-serif font-bold text-deepblue-900 mb-2">Ticket Created!</h3>
-                    <p className="text-sm text-gray-500 mb-6">Your ticket #TKT-NEW-001 has been submitted. We will respond shortly.</p>
+                    <p className="text-sm text-gray-500 mb-6">Your ticket has been submitted. Our team will respond shortly.</p>
                     <Button onClick={() => { setSubmitted(false); onClose(); }} fullWidth>Close</Button>
                 </div>
             </div>
@@ -285,7 +307,7 @@ const CreateTicketModal = ({ isOpen, onClose }: any) => {
                 <div className="p-6 overflow-y-auto space-y-4">
                     <div>
                         <label className="label">Category *</label>
-                        <select className="input-field cursor-pointer">
+                        <select value={category} onChange={(e) => setCategory(e.target.value)} className="input-field cursor-pointer">
                             <option>Commissions & Earnings</option>
                             <option>Payouts & Withdrawals</option>
                             <option>Wallet Issues</option>
@@ -297,13 +319,17 @@ const CreateTicketModal = ({ isOpen, onClose }: any) => {
                     
                     <div>
                         <label className="label">Subject *</label>
-                        <input type="text" className="input-field" placeholder="Brief description of the issue" />
+                        <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} className="input-field" placeholder="Brief description of the issue" />
                     </div>
 
                     <div>
                         <label className="label">Description *</label>
-                        <textarea className="input-field" rows={4} placeholder="Please provide details..."></textarea>
+                        <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="input-field" rows={4} placeholder="Please provide details..."></textarea>
                     </div>
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">{error}</div>
+                    )}
 
                     <div>
                         <label className="label">Priority</label>
@@ -334,7 +360,7 @@ const CreateTicketModal = ({ isOpen, onClose }: any) => {
 
                 <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={() => setSubmitted(true)}>Submit Ticket <Send size={14} className="ml-2" /></Button>
+                    <Button onClick={handleSubmit} disabled={busy}>Submit Ticket <Send size={14} className="ml-2" /></Button>
                 </div>
             </div>
         </div>

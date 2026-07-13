@@ -8,7 +8,7 @@ import {
 import { Button } from '../Button';
 import { useCurrency } from '../../contexts/CurrencyContext';
 
-// --- MOCK DATA ---
+import { api } from '../../lib/api';
 
 interface AgentNode {
     id: string;
@@ -25,44 +25,92 @@ interface AgentNode {
     children?: AgentNode[];
 }
 
-const TREE_DATA: AgentNode = {
-    id: '0', name: 'Rajesh Kumar (YOU)', code: 'AGT-10523', rank: 3, sales: 12, team: 47, joinDate: 'Jan 01, 2024', status: 'Active', level: 0, sponsor: 'Company', avatar_color: 'bg-gold-500 text-white',
-    children: [
-        { 
-            id: '1', name: 'Amit Singh', code: 'AGT-10524', rank: 2, sales: 5, team: 12, joinDate: 'Jan 5, 2026', status: 'Active', level: 1, sponsor: 'Rajesh Kumar', avatar_color: 'bg-orange-100 text-orange-700',
-            children: [
-                { id: '4', name: 'John Doe', code: 'AGT-10530', rank: 1, sales: 1, team: 1, joinDate: 'Jan 12, 2026', status: 'Active', level: 2, sponsor: 'Amit Singh', avatar_color: 'bg-gray-100 text-gray-700' },
-                { id: '5', name: 'Sarah Lee', code: 'AGT-10531', rank: 1, sales: 3, team: 7, joinDate: 'Jan 18, 2026', status: 'Active', level: 2, sponsor: 'Amit Singh', avatar_color: 'bg-gray-100 text-gray-700' }
-            ]
-        },
-        { id: '2', name: 'Priya Roy', code: 'AGT-10525', rank: 1, sales: 2, team: 2, joinDate: 'Jan 10, 2026', status: 'Active', level: 1, sponsor: 'Rajesh Kumar', avatar_color: 'bg-gray-100 text-gray-700' },
-        { 
-            id: '3', name: 'Mike J.', code: 'AGT-10526', rank: 3, sales: 8, team: 25, joinDate: 'Dec 15, 2025', status: 'Active', level: 1, sponsor: 'Rajesh Kumar', avatar_color: 'bg-gray-300 text-gray-800',
-            children: [
-                { id: '6', name: 'Lisa Wong', code: 'AGT-10532', rank: 2, sales: 4, team: 11, joinDate: 'Feb 01, 2026', status: 'Active', level: 2, sponsor: 'Mike J.', avatar_color: 'bg-orange-100 text-orange-700' },
-                { id: '7', name: 'David Chen', code: 'AGT-10533', rank: 1, sales: 2, team: 2, joinDate: 'Jan 22, 2026', status: 'Active', level: 2, sponsor: 'Mike J.', avatar_color: 'bg-gray-100 text-gray-700' }
-            ]
-        },
-    ]
+const rankColor = (rank: number, isRoot = false) => {
+    if (isRoot) return 'bg-gold-500 text-white';
+    if (rank >= 4) return 'bg-gold-200 text-gold-800';
+    if (rank === 3) return 'bg-gray-300 text-gray-800';
+    if (rank === 2) return 'bg-orange-100 text-orange-700';
+    return 'bg-gray-100 text-gray-700';
 };
 
-const TABLE_DATA = [
-    { id: '1', name: 'Amit Singh', code: '10524', level: 1, rank: 2, personal: 5, team: 12, join: "Jan 5 '26", status: 'Active' },
-    { id: '2', name: 'Priya Roy', code: '10525', level: 1, rank: 1, personal: 2, team: 2, join: "Jan 10 '26", status: 'Active' },
-    { id: '3', name: 'Mike J.', code: '10526', level: 1, rank: 3, personal: 8, team: 25, join: "Dec 15 '25", status: 'Active' },
-    { id: '4', name: 'John Doe', code: '10530', level: 2, rank: 1, personal: 1, team: 1, join: "Jan 12 '26", status: 'Active' },
-    { id: '5', name: 'Sarah Lee', code: '10531', level: 2, rank: 1, personal: 3, team: 7, join: "Jan 18 '26", status: 'Active' },
-    { id: '6', name: 'Lisa Wong', code: '10532', level: 2, rank: 2, personal: 4, team: 11, join: "Feb 01 '26", status: 'Active' },
-    { id: '7', name: 'David Chen', code: '10533', level: 2, rank: 1, personal: 2, team: 2, join: "Jan 22 '26", status: 'Active' },
-    { id: '8', name: 'Emma Brown', code: '10545', level: 3, rank: 1, personal: 1, team: 1, join: "Jan 28 '26", status: 'Active' },
-    { id: '9', name: 'Tom Wilson', code: '10556', level: 3, rank: 2, personal: 2, team: 5, join: "Feb 05 '26", status: 'Active' },
-    { id: '10', name: 'Anna White', code: '10567', level: 3, rank: 1, personal: 1, team: 1, join: "Feb 10 '26", status: 'Active' },
-];
+const fmtDate = (d: string) =>
+    d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-export const NetworkView = ({ onRecruit }: { onRecruit: () => void }) => {
+/** Builds an AgentNode tree from the flat /network/tree rows. */
+const buildTree = (rows: any[], root: AgentNode): AgentNode => {
+    const nodes = new Map<string, AgentNode>();
+    const countTeam = (id: string): number =>
+        rows.filter(r => r.sponsor_id === id)
+            .reduce((sum, r) => sum + 1 + countTeam(r.id), 0);
+
+    rows.forEach(r => {
+        nodes.set(r.id, {
+            id: r.id,
+            name: r.role === 'client' ? `${r.full_name} (Client)` : r.full_name,
+            code: r.agent_code || 'CLIENT',
+            rank: r.rank || 1,
+            sales: 0,
+            team: countTeam(r.id),
+            joinDate: fmtDate(r.created_at),
+            status: r.status === 'active' ? 'Active' : 'Inactive',
+            level: r.level,
+            sponsor: '',
+            avatar_color: rankColor(r.rank || 1),
+            children: []
+        });
+    });
+    rows.forEach(r => {
+        const node = nodes.get(r.id)!;
+        const parent = nodes.get(r.sponsor_id);
+        if (parent) {
+            node.sponsor = parent.name;
+            parent.children!.push(node);
+        } else {
+            node.sponsor = root.name;
+            root.children!.push(node);
+        }
+    });
+    root.team = rows.length;
+    return root;
+};
+
+export const NetworkView = ({ onRecruit, profile }: { onRecruit: () => void; profile?: any }) => {
     const [networkTab, setNetworkTab] = useState<'TREE' | 'TABLE' | 'STATS'>('TREE');
     const [selectedAgent, setSelectedAgent] = useState<AgentNode | null>(null);
+    const [treeData, setTreeData] = useState<AgentNode | null>(null);
+    const [tableRows, setTableRows] = useState<any[]>([]);
     const { formatAED } = useCurrency();
+
+    useEffect(() => {
+        api.get<{ network: any[] }>('/network/tree').then(({ network }) => {
+            const root: AgentNode = {
+                id: 'root',
+                name: `${profile?.full_name || 'You'} (YOU)`,
+                code: profile?.agent_code || '—',
+                rank: profile?.rank || 1,
+                sales: 0,
+                team: 0,
+                joinDate: fmtDate(profile?.created_at || ''),
+                status: 'Active',
+                level: 0,
+                sponsor: 'Company',
+                avatar_color: rankColor(profile?.rank || 1, true),
+                children: []
+            };
+            setTreeData(buildTree(network, root));
+            setTableRows(network.map(r => ({
+                id: r.id,
+                name: r.role === 'client' ? `${r.full_name} (Client)` : r.full_name,
+                code: r.agent_code || 'CLIENT',
+                level: r.level,
+                rank: r.rank || 1,
+                personal: 0,
+                team: network.filter(x => x.sponsor_id === r.id).length,
+                join: fmtDate(r.created_at),
+                status: r.status === 'active' ? 'Active' : 'Inactive'
+            })));
+        }).catch(() => { setTreeData(null); setTableRows([]); });
+    }, []);
     
     // Tree View State controls
     const [zoom, setZoom] = useState(1);
@@ -238,12 +286,16 @@ export const NetworkView = ({ onRecruit }: { onRecruit: () => void }) => {
                                     transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                                 }}
                             >
-                                <TreeNode 
-                                    node={TREE_DATA} 
-                                    onView={setSelectedAgent} 
-                                    searchQuery={searchQuery}
-                                    expandTrigger={expandTrigger}
-                                />
+                                {treeData ? (
+                                    <TreeNode
+                                        node={treeData}
+                                        onView={setSelectedAgent}
+                                        searchQuery={searchQuery}
+                                        expandTrigger={expandTrigger}
+                                    />
+                                ) : (
+                                    <p className="text-sm text-gray-400">Loading network…</p>
+                                )}
                             </div>
                         </div>
 
@@ -312,7 +364,10 @@ export const NetworkView = ({ onRecruit }: { onRecruit: () => void }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {TABLE_DATA.map((row) => (
+                                    {tableRows.length === 0 && (
+                                        <tr><td colSpan={9} className="px-6 py-8 text-center text-gray-400">No network members yet. Recruit your first agent!</td></tr>
+                                    )}
+                                    {tableRows.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 transition-colors group">
                                             <td className="px-6 py-4 font-bold text-gray-900 group-hover:text-gold-600 transition-colors">{row.name}</td>
                                             <td className="px-6 py-4 font-mono text-xs text-gray-500">{row.code}</td>
@@ -344,7 +399,7 @@ export const NetworkView = ({ onRecruit }: { onRecruit: () => void }) => {
                             </table>
                         </div>
                         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
-                            <span>Showing 1-10 of 43 agents</span>
+                            <span>Showing {tableRows.length} network member{tableRows.length === 1 ? '' : 's'}</span>
                             <div className="flex gap-1">
                                 <button className="px-2 py-1 border rounded bg-white disabled:opacity-50" disabled>&lt;</button>
                                 <button className="px-2 py-1 border rounded bg-deepblue-900 text-white font-bold">1</button>

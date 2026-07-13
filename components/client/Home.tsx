@@ -3,28 +3,23 @@ import React, { useState, useEffect } from 'react';
 import { Home, DollarSign, Calendar, Activity, ArrowRight, Bell, FileText, Smartphone, CheckCircle, CreditCard, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '../Button';
 import { useCurrency } from '../../contexts/CurrencyContext';
-
-// Mock Data Structure
-const MOCK_PLOTS = [
-    { id: '1', plot_number: 'A-105', block: 'Block A', price_inr: 2520000, paid_amount: 820625, next_emi_date: 'Mar 01, 2026', construction_percent: 45 },
-    { id: '2', plot_number: 'B-220', block: 'Block B', price_inr: 2100000, paid_amount: 105000, next_emi_date: 'Feb 15, 2026', construction_percent: 10 },
-];
+import { api } from '../../lib/api';
 
 export const DashboardHome = ({ profile, bookings, onBuyNew, onViewChange }: any) => {
     const { formatAED } = useCurrency();
-    
-    // Prepare Plot Data (Use real bookings or fallback to mock for demo)
-    const myPlots = bookings && bookings.length > 0 
-        ? bookings.map((b: any) => ({
-            id: b.id,
-            plot_number: b.plot_details?.plot_number || 'Unknown',
-            block: b.plot_details?.block || 'Block A',
-            price_inr: b.plot_details?.price_inr || 0,
-            paid_amount: b.paid_amount || 0,
-            next_emi_date: b.next_emi_date || 'TBD',
-            construction_percent: 0 // Default if not in booking
-        }))
-        : MOCK_PLOTS; // Fallback for UI visualization
+    const [payments, setPayments] = useState<any[]>([]);
+
+    // Prepare Plot Data from live bookings
+    const myPlots = (bookings || []).map((b: any) => ({
+        id: b.id,
+        plot_number: b.plot_details?.plot_number || 'Unknown',
+        block: `Block ${b.plot_details?.block || 'A'}`,
+        price_inr: Number(b.plot_details?.price_inr || b.total_amount || 0),
+        paid_amount: Number(b.paid_amount || 0),
+        next_emi_date: b.next_emi_date ? new Date(b.next_emi_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'TBD',
+        next_emi_raw: b.next_emi_date,
+        status: b.status
+    }));
 
     const [selectedPlotId, setSelectedPlotId] = useState<string>(myPlots[0]?.id || '');
 
@@ -34,52 +29,40 @@ export const DashboardHome = ({ profile, bookings, onBuyNew, onViewChange }: any
         }
     }, [myPlots]);
 
+    useEffect(() => {
+        api.get<{ payments: any[] }>('/payments/my')
+            .then(({ payments: p }) => setPayments(p))
+            .catch(() => setPayments([]));
+    }, []);
+
     const currentPlot = myPlots.find((p: any) => p.id === selectedPlotId) || myPlots[0];
 
     // Derived Stats
     const plotValue = currentPlot?.price_inr || 0;
     const amountPaid = currentPlot?.paid_amount || 0;
     const progress = plotValue > 0 ? ((amountPaid / plotValue) * 100).toFixed(1) : 0;
-    const nextEmiAmount = 37875; // Fixed for now
-    const daysRemaining = 27; // Fixed for now
+    // 10% booking + 90% over 60 monthly EMIs (0% interest)
+    const nextEmiAmount = plotValue > 0 ? Math.round((plotValue * 0.9) / 60) : 0;
+    const daysRemaining = currentPlot?.next_emi_raw
+        ? Math.max(0, Math.ceil((new Date(currentPlot.next_emi_raw).getTime() - Date.now()) / 86400000))
+        : 0;
 
-    // Recent Activities Data
+    // Recent Activities from real payments + bookings
     const activities = [
-        {
-            id: 1,
-            title: 'EMI Payment Received',
-            date: 'Feb 01, 2026',
-            desc: formatAED(37875),
-            color: 'bg-green-500'
-        },
-        {
-            id: 2,
-            title: 'Construction Update Posted',
-            date: 'Jan 25, 2026',
-            desc: 'Block A Progress',
-            color: 'bg-blue-500'
-        },
-        {
-            id: 3,
-            title: 'Document Uploaded',
-            date: 'Jan 15, 2026',
-            desc: 'Payment Receipt #14',
-            color: 'bg-gray-400'
-        },
-        {
-            id: 4,
-            title: 'Project Milestone Completed',
-            date: 'Dec 20, 2025',
-            desc: 'Infrastructure Ready',
-            color: 'bg-gold-500'
-        },
-        {
-            id: 5,
-            title: 'Booking Confirmed',
-            date: 'Dec 15, 2025',
-            desc: 'Plot A-105 Secured',
+        ...payments.slice(0, 4).map((p: any, i: number) => ({
+            id: `pay-${p.id}`,
+            title: p.status === 'verified' ? 'Payment Verified' : p.status === 'rejected' ? 'Payment Rejected' : 'Payment Submitted',
+            date: new Date(p.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            desc: formatAED(Number(p.amount)),
+            color: p.status === 'verified' ? 'bg-green-500' : p.status === 'rejected' ? 'bg-red-500' : 'bg-gold-500'
+        })),
+        ...(bookings || []).slice(0, 2).map((b: any) => ({
+            id: `book-${b.id}`,
+            title: b.status === 'CONFIRMED' ? 'Booking Confirmed' : 'Booking Pending Verification',
+            date: new Date(b.booking_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            desc: `Plot ${b.plot_details?.plot_number || ''} Secured`,
             color: 'bg-deepblue-900'
-        }
+        }))
     ];
 
     return (
@@ -183,15 +166,15 @@ export const DashboardHome = ({ profile, bookings, onBuyNew, onViewChange }: any
                             
                             <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-sm font-bold text-gray-700">Booking Amount</span>
-                                    <span className="text-sm font-bold text-green-600 flex items-center gap-1">{formatAED(252500)} <CheckCircle size={14} /></span>
+                                    <span className="text-sm font-bold text-gray-700">Booking Amount (10%)</span>
+                                    <span className="text-sm font-bold text-green-600 flex items-center gap-1">{formatAED(Math.round(plotValue * 0.1))} {amountPaid >= plotValue * 0.1 && <CheckCircle size={14} />}</span>
                                 </div>
-                                <p className="text-xs text-gray-500">Paid on Jan 15, 2026</p>
+                                <p className="text-xs text-gray-500">{amountPaid >= plotValue * 0.1 ? 'Received' : 'Due on booking'}</p>
                             </div>
 
                             <div className="space-y-4">
                                 <div className="flex justify-between text-sm">
-                                    <span>EMI Progress: 15/60 installments</span>
+                                    <span>Payment Progress</span>
                                     <span className="font-bold text-deepblue-900">{progress}%</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-3">
@@ -214,7 +197,7 @@ export const DashboardHome = ({ profile, bookings, onBuyNew, onViewChange }: any
                                 </div>
 
                                 <p className="text-xs text-gray-500 italic text-center">
-                                    Monthly EMI: {formatAED(37875)} × 45 remaining = {formatAED(1704375)} (Approx)
+                                    Monthly EMI: {formatAED(nextEmiAmount)} • 0% interest over 5 years
                                 </p>
                             </div>
                         </div>

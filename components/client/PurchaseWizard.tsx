@@ -1,32 +1,29 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Home, DollarSign, CreditCard, Landmark, AlertCircle, CheckCircle, X, ChevronRight, Check } from 'lucide-react';
+import { Upload, Home, DollarSign, CreditCard, Landmark, AlertCircle, CheckCircle, X, ChevronRight, Check, Loader2 } from 'lucide-react';
 import { Button } from '../Button';
-import { Plot, PlotType } from '../../types';
+import { Plot } from '../../types';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { api } from '../../lib/api';
 
 type WizardSection = 'BUYER' | 'KYC' | 'INTENT' | 'PLOT' | 'PLAN' | 'PROOF' | 'CONSULTANT' | 'SIGNATURE';
-
-// --- MOCK INVENTORY ---
-const MOCK_INVENTORY: Plot[] = [
-    { id: '1', plot_number: 'A-101', block: 'A', type: PlotType.STANDARD, size_sqft: 1000, price_aed: 101000, price_inr: 2520000, status: 'AVAILABLE' },
-    { id: '2', plot_number: 'A-102', block: 'A', type: PlotType.STANDARD, size_sqft: 1000, price_aed: 101000, price_inr: 2520000, status: 'SOLD' },
-    { id: '3', plot_number: 'A-105', block: 'A', type: PlotType.GARDEN, size_sqft: 1000, price_aed: 106050, price_inr: 2646000, status: 'AVAILABLE' },
-    { id: '4', plot_number: 'B-203', block: 'B', type: PlotType.CORNER, size_sqft: 1200, price_aed: 127260, price_inr: 3175200, status: 'AVAILABLE' },
-];
 
 export const PurchaseWizard = ({ profile, selectedPlot: initialPlot, onCancel, onSuccess }: any) => {
     const [step, setStep] = useState<WizardSection>('PLOT');
     const [plot, setPlot] = useState<Plot | null>(initialPlot);
     const [inventory, setInventory] = useState<Plot[]>([]);
-    
+    const [inventoryLoading, setInventoryLoading] = useState(false);
+
     // Form State
     const [intent, setIntent] = useState<'personal' | 'investment' | null>(null);
     const [paymentPlan, setPaymentPlan] = useState<'full' | 'financing'>('financing');
     const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'manual' | 'crypto' | null>(null);
+    const [transactionRef, setTransactionRef] = useState('');
     const [signature, setSignature] = useState<string | null>(null);
     const [showConfetti, setShowConfetti] = useState(false);
-    
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
+
     const { formatAED, formatUSDT } = useCurrency();
 
     useEffect(() => {
@@ -35,7 +32,43 @@ export const PurchaseWizard = ({ profile, selectedPlot: initialPlot, onCancel, o
     }, []);
 
     const fetchInventory = async () => {
-        setInventory(MOCK_INVENTORY);
+        setInventoryLoading(true);
+        try {
+            const { plots } = await api.get<{ plots: Plot[] }>('/plots');
+            setInventory(plots);
+        } catch (e) {
+            console.error('Failed to load inventory', e);
+            setInventory([]);
+        } finally {
+            setInventoryLoading(false);
+        }
+    };
+
+    /** Creates the booking, then submits the booking-amount payment for admin verification. */
+    const handleSubmitApplication = async () => {
+        if (!plot) return;
+        setSubmitting(true);
+        setSubmitError('');
+        try {
+            const { booking } = await api.post<{ booking: any }>('/bookings', { plot_id: plot.id });
+            const amount = paymentPlan === 'full'
+                ? Number(plot.price_inr)
+                : Math.round(Number(plot.price_inr) * 0.1);
+            const method = paymentMethod === 'crypto' ? 'USDT_TRC20'
+                : paymentMethod === 'stripe' ? 'RAZORPAY' : 'BANK_TRANSFER';
+            await api.post('/payments', {
+                booking_id: booking.id,
+                amount,
+                method,
+                transaction_ref: transactionRef || undefined
+            });
+            setShowConfetti(true);
+            setTimeout(() => { onSuccess(); }, 2000);
+        } catch (e: any) {
+            setSubmitError(e?.message || 'Submission failed. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handlePlotSelect = (p: Plot) => {
@@ -56,6 +89,12 @@ export const PurchaseWizard = ({ profile, selectedPlot: initialPlot, onCancel, o
                             <h3 className="text-2xl font-serif font-bold text-deepblue-900">Select Your Plot</h3>
                             <p className="text-gray-500">Choose from available inventory in Phase 1.</p>
                         </div>
+                        {inventoryLoading && (
+                            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-gold-500" size={32} /></div>
+                        )}
+                        {!inventoryLoading && inventory.length === 0 && (
+                            <p className="text-center text-gray-500 py-12">No plots available right now. Please check back soon.</p>
+                        )}
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {inventory.map(p => (
                                 <button 
@@ -269,10 +308,8 @@ export const PurchaseWizard = ({ profile, selectedPlot: initialPlot, onCancel, o
                                      </div>
                                  </div>
                                  <div className="mt-6">
-                                     <label className="block text-sm font-medium text-gray-700 mb-1">Upload Payment Receipt / Screenshot *</label>
-                                     <div className="border border-gray-300 bg-white rounded-lg p-3">
-                                         <input type="file" className="text-sm" />
-                                     </div>
+                                     <label className="block text-sm font-medium text-gray-700 mb-1">Bank Transfer Reference Number *</label>
+                                     <input type="text" value={transactionRef} onChange={(e) => setTransactionRef(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-none bg-white" placeholder="e.g. UTR / SWIFT reference..." />
                                  </div>
                              </div>
                         )}
@@ -289,7 +326,7 @@ export const PurchaseWizard = ({ profile, selectedPlot: initialPlot, onCancel, o
                                 </div>
                                  <div className="mt-4">
                                      <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Hash (TXID)</label>
-                                     <input type="text" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-none" placeholder="Enter blockchain transaction hash..." />
+                                     <input type="text" value={transactionRef} onChange={(e) => setTransactionRef(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-none" placeholder="Enter blockchain transaction hash..." />
                                  </div>
                             </div>
                         )}
@@ -318,15 +355,17 @@ export const PurchaseWizard = ({ profile, selectedPlot: initialPlot, onCancel, o
                              <SignaturePad onSave={setSignature} />
                          </div>
 
+                         {submitError && (
+                             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                                 <AlertCircle size={16} className="shrink-0" /> {submitError}
+                             </div>
+                         )}
+
                          <div className="flex justify-between pt-4">
                              <button onClick={() => setStep('PROOF')} className="text-gray-500 hover:text-deepblue-900 font-medium">Back</button>
-                             <Button onClick={() => {
-                                 // Submit Logic Here
-                                 setShowConfetti(true);
-                                 setTimeout(() => {
-                                     onSuccess();
-                                 }, 2000);
-                             }} disabled={!signature}>Submit Application <CheckCircle size={16} /></Button>
+                             <Button onClick={handleSubmitApplication} disabled={!signature || submitting}>
+                                 {submitting ? <Loader2 className="animate-spin" size={16} /> : <>Submit Application <CheckCircle size={16} /></>}
+                             </Button>
                         </div>
                     </div>
                 );

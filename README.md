@@ -3,7 +3,9 @@
 
 # RAK Oasis Estate
 
-**An investor portal, sales-agent MLM platform, and AI-assisted marketing site for a 406-acre real estate development in Ras Al Khaimah, UAE.**
+**A self-hosted investor portal, sales-agent MLM platform, and AI-assisted marketing site for a 406-acre real estate development in Ras Al Khaimah, UAE.**
+
+React SPA + Express API + PostgreSQL, deployed as a single Docker Compose stack.
 
 </div>
 
@@ -13,35 +15,30 @@
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Local Development](#local-development)
 - [Project Structure](#project-structure)
-- [Application Architecture](#application-architecture)
-  - [Routing & the Three Portals](#routing--the-three-portals)
-  - [Authentication & Sessions](#authentication--sessions)
-  - [Global State (Contexts)](#global-state-contexts)
+- [Architecture](#architecture)
+- [API Reference](#api-reference)
 - [Core Domain: The MLM Commission Engine](#core-domain-the-mlm-commission-engine)
 - [Data Model](#data-model)
 - [Pricing & Payment Plans](#pricing--payment-plans)
-- [AI Investment Advisor](#ai-investment-advisor)
-- [PDF Generation](#pdf-generation)
+- [Seeded Accounts](#seeded-accounts)
 - [Deployment](#deployment)
-- [Project Status & Known Limitations](#project-status--known-limitations)
+- [Known Limitations](#known-limitations)
 
 ---
 
 ## Overview
 
-RAK Oasis Estate is a single-page React application that serves several audiences from one codebase:
+RAK Oasis Estate serves several audiences from one codebase:
 
-1. **Prospective investors** — a marketing landing page with an investment calculator and an AI-powered investment advisor.
-2. **Clients** — a portal to purchase plots (KYC → plot selection → deposit), track their properties, make EMI payments, and download documents.
-3. **Sales agents** — a full multi-level-marketing (MLM) workspace: genealogy/network tree, sales tracking, rank progression, commission earnings, leaderboards, recruiting, and training.
-4. **Administrators** — a back-office console to manage clients, agents, plot inventory, inbound payments, the commission ledger, and USDT payouts.
+1. **Prospective investors** — a marketing landing page with an investment calculator and an AI investment advisor (Gemini, proxied server-side).
+2. **Clients** — purchase plots (wizard: buyer → KYC → plan → payment proof → signature), track EMI payments, download documents, read project updates, raise support tickets.
+3. **Sales agents** — MLM workspace: genealogy tree, client registration, sales tracking, commission ledger, USDT payout requests, leaderboard, training center.
+4. **Administrators** — back-office console: client/agent management (KYC, approvals, ranks), plot inventory CRUD, payment verification (triggers commission calculation), commission approval, USDT payout processing, announcements, support tickets.
 
-The property being sold: **Phase 1 (84.67 acres) of a 406-acre development** in Ras Al Khaimah, priced at **131 AED/sq.ft**, sold as 1,000 sq.ft plots on a **10% booking + 90%-over-5-years** payment plan.
-
-> This project originated from Google AI Studio. It currently combines a **mock/demo authentication layer** with a **real Supabase backend** — see [Project Status & Known Limitations](#project-status--known-limitations).
+The property: **Phase 1 (84.67 acres) of a 406-acre development**, priced at **131 AED/sq.ft**, sold as 1,000 sq.ft plots on a **10% booking + 90% over 5 years (0% interest)** plan.
 
 ---
 
@@ -49,55 +46,50 @@ The property being sold: **Phase 1 (84.67 acres) of a 406-acre development** in 
 
 | Layer | Technology |
 |---|---|
-| Framework | React 18 + TypeScript |
-| Build tool | Vite 5 |
-| Routing | React Router 6 (`HashRouter`) |
-| Styling | Tailwind CSS 3 + PostCSS |
-| Icons | lucide-react |
-| Charts | Recharts |
-| Backend / Auth / DB | Supabase (PostgreSQL) |
-| AI | Google Gemini (`@google/genai`) |
-| PDF generation | `@react-pdf/renderer` |
-| Analytics | Vercel Analytics + Speed Insights |
+| Frontend | React 18 + TypeScript, Vite 5, Tailwind CSS 3, React Router 6 (HashRouter), Recharts, lucide-react |
+| Backend | Node 20, Express 4, TypeScript, `pg` (raw SQL), bcryptjs, jsonwebtoken |
+| Database | PostgreSQL 16 |
+| AI | Google Gemini via server-side proxy (`POST /api/advisor`) |
+| PDF | `@react-pdf/renderer` |
+| Deployment | Docker Compose (postgres + api + nginx), see [DEPLOY.md](DEPLOY.md) |
 
 ---
 
-## Getting Started
-
-**Prerequisites:** Node.js (18+ recommended)
+## Quick Start (Docker)
 
 ```bash
-# 1. Install dependencies
+cp .env.example .env      # set POSTGRES_PASSWORD and JWT_SECRET
+docker compose up -d --build
+```
+
+Open `http://localhost` (or `WEB_PORT`). Migrations and an idempotent demo seed run automatically. Log in with the [seeded accounts](#seeded-accounts).
+
+---
+
+## Local Development
+
+```bash
+# 1. Database
+docker compose up -d db            # or any local Postgres 16
+
+# 2. API (terminal 1)
+cd server
 npm install
+DATABASE_URL=postgres://rakoasis:<pw>@localhost:5432/rakoasis JWT_SECRET=dev npm run dev
+npm run seed                       # once, to seed demo data
 
-# 2. Configure environment (see below)
-#    Create a .env.local file with your Gemini API key
-
-# 3. Start the dev server
+# 3. Frontend (terminal 2) — vite proxies /api → localhost:4000
+npm install
 npm run dev
 ```
 
-**Available scripts:**
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the Vite dev server |
-| `npm run build` | Type-check (`tsc`) and build for production |
-| `npm run preview` | Preview the production build locally |
-
----
-
-## Environment Variables
-
-Create a `.env.local` file in the project root:
-
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-The key is read at build time in [`vite.config.ts`](vite.config.ts) and injected as `process.env.API_KEY`, consumed by [`services/geminiService.ts`](services/geminiService.ts).
-
-> **Note:** The Supabase URL and publishable (anon) key are currently hardcoded in [`lib/supabaseClient.ts`](lib/supabaseClient.ts). For production they should be moved to environment variables.
+| Command | Where | Description |
+|---|---|---|
+| `npm run dev` | root | Vite dev server (proxy `/api` → :4000) |
+| `npm run build` | root | Type-check + production build |
+| `npm run dev` | server/ | API with hot reload |
+| `npm run build` / `start` | server/ | Compile / run API |
+| `npm run migrate` / `seed` | server/ | Apply migrations / seed demo data |
 
 ---
 
@@ -105,198 +97,164 @@ The key is read at build time in [`vite.config.ts`](vite.config.ts) and injected
 
 ```
 .
-├── App.tsx                  # Root component: routing, auth orchestration, loaders
-├── index.tsx                # React entry point
-├── index.html / index.css   # HTML shell + global styles
-├── types.ts                 # Shared TypeScript types & enums (single source of truth)
-│
+├── App.tsx                  # Root: routing, JWT auth boot, inactivity logout
 ├── lib/
-│   ├── supabaseClient.ts    # Supabase client initialization
-│   ├── session.ts           # SessionManager: mock JWT create/verify, inactivity timeout
-│   ├── mlmEngine.ts         # Core MLM business logic (commissions, ranks, payouts)
-│   └── schema.sql           # PostgreSQL schema + RLS policies
-│
-├── services/
-│   └── geminiService.ts     # Google Gemini investment-advisor integration
-│
-├── contexts/
-│   ├── CurrencyContext.tsx     # AED/INR/USDT conversion & formatting
-│   └── PageAccessContext.tsx   # Admin-controlled page enable/disable/hide
-│
+│   ├── api.ts               # Fetch wrapper: JWT bearer, ApiError, 401 broadcast
+│   └── session.ts           # Token+profile store, 3h inactivity timeout
 ├── components/
 │   ├── LandingPage.tsx      # Public marketing page
-│   ├── Calculator.tsx       # Investment calculator (pricing/EMI)
-│   ├── GeminiAdvisor.tsx    # AI chat advisor UI
-│   ├── AuthModal.tsx, BookingModal.tsx, Preloader.tsx, ...  # Shared UI
-│   │
-│   ├── client/              # Client portal (dashboard, purchase wizard, plots, payments, docs)
-│   ├── agent/               # Agent MLM portal (network, sales, earnings, recruit, training)
-│   ├── admin/               # Admin console (clients, agents, plots, commissions, payouts)
-│   └── pdf/                 # React-PDF document templates (booking slip, EMI slip, etc.)
+│   ├── AuthModal.tsx        # Real login + client signup (agent referral code)
+│   ├── GeminiAdvisor.tsx    # AI chat (server-proxied)
+│   ├── client/              # Client portal (wizard, payments, docs, updates)
+│   ├── agent/               # Agent MLM portal (network, sales, earnings, training)
+│   ├── admin/               # Admin console (all entities + verification flows)
+│   └── pdf/                 # React-PDF documents
+├── contexts/                # Currency rates, page access control
 │
-├── vite.config.ts           # Vite config + env injection
-├── tailwind.config.js       # Theme (deepblue / gold brand palette)
-└── tsconfig*.json           # TypeScript config
+├── server/                  # Express API
+│   ├── src/
+│   │   ├── index.ts         # Bootstrap (auto-migrate on boot)
+│   │   ├── db.ts            # pg pool
+│   │   ├── middleware/auth.ts  # JWT sign/verify, role guards
+│   │   ├── mlm.ts           # Unilevel engine + payout eligibility
+│   │   ├── routes/          # auth, plots, bookings, payments, commissions,
+│   │   │                    # payouts, network, admin, content, advisor
+│   │   ├── migrate.ts       # SQL migration runner
+│   │   └── seed.ts          # Idempotent demo seed
+│   └── migrations/001_init.sql
+│
+├── docker-compose.yml       # db + api + web (nginx)
+├── Dockerfile.web           # Vite build → nginx
+├── server/Dockerfile        # API image
+├── deploy/nginx.conf        # SPA + /api reverse proxy
+└── DEPLOY.md                # VPS runbook
 ```
 
 ---
 
-## Application Architecture
+## Architecture
 
-### Routing & the Three Portals
+```
+Browser (React SPA)
+   │  Authorization: Bearer <JWT>
+   ▼
+nginx ──► /       static SPA build
+      └─► /api/*  Express API ──► PostgreSQL
+```
 
-[`App.tsx`](App.tsx) wraps the app in `HashRouter` and two context providers, then renders role-gated routes:
+**Auth:** email + password → bcrypt check → 24h JWT (`{sub, role, email}`). Frontend stores the token, boots via `GET /api/auth/me`, auto-logs-out after 3h inactivity, and broadcasts a logout on any 401. Role-gated routes: `/client/*`, `/agent/*`, `/admin/*` — enforced again server-side by `requireRole` middleware on every endpoint.
 
-| Route | Guard | Portal |
-|---|---|---|
-| `/` | Public | `LandingPage` (redirects logged-in users to their portal) |
-| `/client/*` | `role === 'client'` | `components/client/Dashboard.tsx` |
-| `/agent/*` | `role === 'agent'` | `components/agent/Dashboard.tsx` |
-| `/admin/*` | `role === 'admin'` | `components/admin/Dashboard.tsx` |
-| `*` | — | Redirect to `/` |
+**Registration paths:**
+- Public client signup (optional agent referral code links the sponsor)
+- Agents register clients under their own code
+- Agents recruit downline agents (created `pending` until admin approval)
 
-Each portal is a **sidebar-shell layout with nested routes**:
+---
 
-- **Client** — Dashboard, My Plot(s), Payments, Documents, Updates, Support, Profile, plus a multi-step **Purchase Wizard** (Buyer → KYC → Intent → Plot → Plan → Proof → Consultant → Signature).
-- **Agent** — Dashboard, Network (genealogy tree), Sales, Earnings, Leaderboard, Recruit, Marketing, Training, Profile, Support.
-- **Admin** — Dashboard, Clients, Agents, Plots, Payments, Commissions, USDT Payouts, Page Control, Content, Reports, Tickets, Settings.
+## API Reference
 
-### Authentication & Sessions
+All endpoints under `/api`. 🔒 = JWT required, 👑 = admin only, 🧑‍💼 = agent.
 
-Auth resolves on load in priority order (in [`App.tsx`](App.tsx) `checkAuth`):
-
-1. **URL token** — a `?token=` query param is verified via `SessionManager.verifyToken`.
-2. **Supabase session** — real auth via `supabase.auth.getSession()`.
-3. **Persisted mock session** — a token stored in `localStorage`.
-
-[`lib/session.ts`](lib/session.ts) implements a `SessionManager` that:
-- Creates a JWT-shaped token (header.payload.signature) with the user profile encoded in the payload.
-- Enforces a **3-hour inactivity timeout** — `App.tsx` listens to mouse/keyboard/scroll/click events and auto-logs-out idle users (checked every 60s).
-- Handles online/offline transitions with a re-link + Supabase session refresh.
-
-There is also a **mock login** path (`handleMockLogin`) that fabricates client/agent/admin profiles for demo purposes without going through real authentication.
-
-### Global State (Contexts)
-
-- **`CurrencyContext`** — holds AED↔INR↔USDT rates (defaults: 1 AED = ₹25, 1 USDT = ₹92) and exposes `formatAED`, `formatUSDT`, `convertToAED` helpers used across portals.
-- **`PageAccessContext`** — lets admins toggle each client/agent page between `ENABLED`, `DISABLED` (shows a maintenance overlay), or `HIDDEN` (removed from nav). State is in-memory.
+| Method & Path | Description |
+|---|---|
+| `POST /auth/register` | Client signup (optional `agent_code`) |
+| `POST /auth/login` · `GET /auth/me` · `PATCH /auth/me` | Session + profile |
+| `POST /auth/register-agent` 🧑‍💼 | Recruit downline agent (pending approval) |
+| `GET /plots` 🔒 · `POST/PATCH/DELETE /admin/plots` 👑 | Inventory |
+| `POST /bookings` 🔒 · `GET /bookings/my` | Reserve plot, 10% booking due |
+| `GET/PATCH /admin/bookings` 👑 | Confirm / cancel (releases plot) |
+| `POST /payments` 🔒 · `GET /payments/my` | Submit payment proof |
+| `PATCH /admin/payments/:id/verify` 👑 | Verify → updates booking, **runs MLM engine** |
+| `GET /commissions/my` 🧑‍💼 · `PATCH /admin/commissions/:id/approve` 👑 | Ledger; approval credits wallet |
+| `POST /payouts` 🧑‍💼 · `PATCH /admin/payouts/:id` 👑 | USDT payout request / complete / reject(refund) |
+| `GET /network/tree` · `/network/stats` · `/network/clients` 🧑‍💼 | Genealogy + aggregates |
+| `GET /leaderboard` 🔒 | Top agents by approved earnings |
+| `GET /admin/stats` · `/admin/clients` · `/admin/agents` · `PATCH /admin/users/:id` 👑 | Back office |
+| `GET /updates` 🔒 · `POST /admin/updates` 👑 | Announcements |
+| `POST /tickets` 🔒 · `GET/PATCH /admin/tickets` 👑 | Support |
+| `POST /advisor` | Gemini investment advisor (key stays server-side) |
 
 ---
 
 ## Core Domain: The MLM Commission Engine
 
-The heart of the business logic lives in [`lib/mlmEngine.ts`](lib/mlmEngine.ts). It runs per verified payment and drives agent compensation.
-
-### Distribution constants
+Server-side in [`server/src/mlm.ts`](server/src/mlm.ts), executed inside payment verification:
 
 ```
-Pool percentage:   20% of inflow
-Unilevel rates:    L1 = 8%,  L2 = 3%,  L3 = 2%,  L4 = 1%,  L5 = 1%
-Infinity rates:    Rank 3 = 2%,  Rank 4 = 3%,  Rank 5 = 4%
-TDS:               10%
+Unilevel rates:  L1 = 8%,  L2 = 3%,  L3 = 2%,  L4 = 1%,  L5 = 1%
+Payout: USDT (TRC20), min ₹10,000, KYC + verified wallet required
 ```
 
-### Unilevel commissions
-
-`calculateUnilevelCommission()` starts at the client's direct sponsor and **walks the genealogy tree upward up to 5 levels**, crediting each active, KYC-verified agent their level's percentage. Commissions are inserted into the ledger with status `calculated_pending_approval` (they require admin approval before payout).
-
-### Ranks & Infinity bonuses
-
-Agents progress through 5 ranks (defined in [`types.ts`](types.ts) `UserRank`):
-
-| Rank | Title | Unlocks |
-|---|---|---|
-| 1 | Agent | — |
-| 2 | Senior Agent | — |
-| 3 | Area Manager | 2% Infinity bonus |
-| 4 | Zonal Head | 3% Infinity bonus |
-| 5 | President | 4% Infinity bonus |
-
-`checkRankAdvancement()` promotes agents based on quest completion (personal sales, active recruits, team volume thresholds).
-
-### Payouts
-
-`checkPayoutEligibility()` gates withdrawals on:
-- Minimum wallet balance of **₹10,000**
-- A verified **TRC20 (USDT)** wallet address
-- Completed **KYC**
-- Sufficient funds
-
-Payouts are settled in **USDT (TRC20)** and tracked in the `payout_requests` table.
+On each **verified** payment the engine walks the client's sponsor chain up to 5 levels, crediting each *active, KYC-verified* agent a pending commission. Admin approval credits the agent's wallet; payout requests debit it (refunded on rejection). Ranks 1–5 (Agent → President) are managed by admins from the agent roster.
 
 ---
 
 ## Data Model
 
-Defined in [`lib/schema.sql`](lib/schema.sql) (PostgreSQL / Supabase):
+[`server/migrations/001_init.sql`](server/migrations/001_init.sql):
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Unified users (client / agent / admin). Holds `sponsor_id` for genealogy linkage, `rank`, `wallet_balance`, KYC status, and crypto wallet addresses. |
-| `plots` | Inventory — plot number, block, type (Standard / Garden / Corner), size, AED & INR price, status (`AVAILABLE` / `RESERVED` / `SOLD` / `FORFEITED`). |
-| `payments` | Inbound payments (Razorpay / crypto / bank), with verification tracking. |
-| `commissions` | The commission ledger — `UNILEVEL` / `INFINITY` / `LEADERBOARD`, with level and approval status. |
-| `payout_requests` | Outbound USDT payout requests with tx hash tracking. |
+| `profiles` | Unified users; `sponsor_id` genealogy, `rank`, `wallet_balance`, KYC, `status` (pending/active/suspended), bcrypt `password_hash` |
+| `plots` | Inventory: number, block, type, sizes, AED/INR price, status |
+| `bookings` | Plot purchases: totals, paid amount, next EMI date, 3-strike counter |
+| `payments` | Inbound payments with verification workflow |
+| `commissions` | UNILEVEL/INFINITY/LEADERBOARD ledger with approval status |
+| `payout_requests` | Outbound USDT with tx hash |
+| `updates` | Announcements (audience: all/client/agent) |
+| `tickets` | Support tickets with admin replies |
 
-Row-Level Security (RLS) policies restrict agents to their own profile and commissions. Admin-wide access is currently simplified (see limitations).
+Authorization is enforced in the API layer (single trusted backend); no client-side DB access exists.
 
 ---
 
 ## Pricing & Payment Plans
 
-Implemented in [`components/Calculator.tsx`](components/Calculator.tsx):
-
 | Parameter | Value |
 |---|---|
 | Base price | **131 AED/sq.ft** (≈ ₹3,275/sq.ft) |
-| Plot size | 1,000 sq.ft (standard) |
-| Premium plots | +5% for Garden-facing or Corner |
-| Booking amount | 10% down (configurable 10–50%) |
-| Balance | Over up to 5 years, **0% interest** EMI |
+| Plot size | 1,000 sq.ft |
+| Premium plots | +5% Garden-facing / Corner |
+| Plan | 10% booking + 60 monthly EMIs at **0% interest** |
 
 ---
 
-## AI Investment Advisor
+## Seeded Accounts
 
-[`services/geminiService.ts`](services/geminiService.ts) integrates **Google Gemini** as a real-estate investment consultant. It's primed with a system instruction covering project facts (acreage, pricing, payment plan, RAK location context) and constrained to concise, professional responses that encourage booking a call. Surfaced through the `GeminiAdvisor` component.
+Password: `SEED_PASSWORD` (default `RakOasis@2026` — **change in production**).
 
----
+| Role | Email | Notes |
+|---|---|---|
+| Admin | `admin@rakoasis.com` | Full console |
+| Agent | `agent@rakoasis.com` | `AGT-10523`, Rank 3, 3-level upline seeded |
+| Client | `client@rakoasis.com` | Sponsored by the agent, has a confirmed booking |
 
-## PDF Generation
-
-The [`components/pdf/`](components/pdf/) directory uses `@react-pdf/renderer` to produce downloadable documents:
-
-- `BookingSlipPDF.tsx` — plot booking confirmation
-- `EMISlipPDF.tsx` — installment receipts
-- `GenericDocumentPDF.tsx` — reusable document template
+Seed also creates 24 plots (blocks A–C), a verified demo payment with its full commission cascade, and sample announcements.
 
 ---
 
 ## Deployment
 
-The app is a static SPA and is configured for **Vercel** (Analytics + Speed Insights are wired in via `App.tsx`). Any static host works:
+See **[DEPLOY.md](DEPLOY.md)** for the complete VPS runbook (Docker install, TLS via certbot, backups, updates). Short version:
 
 ```bash
-npm run build      # outputs to dist/
+cp .env.example .env && nano .env   # POSTGRES_PASSWORD, JWT_SECRET
+docker compose up -d --build
 ```
-
-Because routing uses `HashRouter`, no server-side rewrite rules are required. Remember to configure `GEMINI_API_KEY` in your host's environment.
 
 ---
 
-## Project Status & Known Limitations
+## Known Limitations
 
-This is an **early-stage / prototype** application. Before production use, note:
-
-- **Mock auth layer.** Alongside real Supabase auth, a mock-login flow can fabricate any role client-side. The custom session tokens in [`lib/session.ts`](lib/session.ts) use a hardcoded XOR key and are not cryptographically secure — they should not be relied on for real authorization.
-- **Hardcoded credentials.** The Supabase URL/key live in source; the Gemini key is bundled into client JS at build time. Move secrets to environment variables and rely on Supabase RLS for data protection.
-- **Simplified RLS.** The schema notes that admin-wide access checks are simplified and should use a secure role-checking function in production.
-- **In-memory admin settings.** `CurrencyContext` rates and `PageAccessContext` page settings are React state only and do not persist across reloads.
-- **Mock inventory / data.** Several flows (e.g. the Purchase Wizard's plot inventory, dashboard notifications) use hardcoded mock data.
-- **Dead code.** The top-level `components/ClientDashboard.tsx`, `AgentDashboard.tsx`, and `AdminDashboard.tsx` are superseded by the versions under `components/{role}/` and are no longer imported.
+- **Payment verification is manual** — clients submit transaction references; admins verify. No live Razorpay/Stripe integration.
+- **No email/OTP service** — registration is immediate; password resets require admin action.
+- **KYC is a flag** — no document upload/storage pipeline yet.
+- **Infinity & Leaderboard bonuses** are schema-supported but admin-manual; only unilevel is automated.
+- **In-memory admin settings** — currency rates and page-access toggles reset on reload.
+- **USDT payouts are recorded, not executed** — admins send USDT externally and paste the tx hash.
 
 ---
 
 <div align="center">
-<sub>Built with React, Vite, Supabase, and Google Gemini.</sub>
+<sub>React · Express · PostgreSQL · Docker — self-hosted, no third-party BaaS.</sub>
 </div>
