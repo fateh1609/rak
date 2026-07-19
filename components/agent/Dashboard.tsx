@@ -7,6 +7,7 @@ import {
 import { UserProfile } from '../../types';
 import { Button } from '../Button';
 import { api } from '../../lib/api';
+import { LOGO_URL } from '../../lib/brand';
 import { DashboardHome } from './Home';
 import { NetworkView } from './Network';
 import { SalesView } from './Sales';
@@ -91,7 +92,7 @@ export const AgentDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
       <aside className={`fixed inset-y-0 left-0 z-50 w-[250px] bg-deepblue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 shadow-2xl flex flex-col border-r border-white/5`}>
          <div className="p-6 border-b border-white/10 flex items-center justify-between">
              <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 bg-gold-500 rounded-lg flex items-center justify-center font-serif font-bold text-deepblue-900 text-xl shadow-lg shadow-gold-500/20">R</div>
+                 <img src={LOGO_URL} alt="RAK Oasis" className="h-10 w-auto shrink-0" />
                  <div>
                      <h1 className="font-serif font-bold text-lg tracking-wide text-white">RAK Oasis</h1>
                      <p className="text-[10px] text-gold-400 uppercase tracking-widest font-medium">Agent Portal</p>

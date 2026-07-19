@@ -13,6 +13,7 @@ import {
   SupportView, SettingsView, PageControlView 
 } from './Views';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { LOGO_URL } from '../../lib/brand';
 
 export type AdminSection = 'DASHBOARD' | 'AGENTS' | 'PAYOUTS' | 'COMMISSIONS' | 'PAYMENTS' | 'PLOTS' | 'CLIENTS' | 'CONTENT' | 'REPORTS' | 'SUPPORT' | 'SETTINGS' | 'PAGE_CONTROL';
 
@@ -55,7 +56,7 @@ export const AdminDashboard: React.FC<DashboardProps> = ({ profile, onLogout, on
         {/* Header */}
         <div className="h-12 border-b border-gray-800 flex justify-between items-center px-4 bg-gray-900">
            <div className="flex items-center gap-2 text-white font-bold tracking-tight">
-             <div className="w-3 h-3 bg-red-600 rounded-none"></div>
+             <img src={LOGO_URL} alt="RAK Oasis" className="h-6 w-auto shrink-0" />
              <span>RAK_ADMIN_V1.0</span>
            </div>
            <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white"><X size={18} /></button>

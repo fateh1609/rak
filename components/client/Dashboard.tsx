@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
+import { LOGO_URL } from '../../lib/brand';
 import {
   LogOut, User, FileText, Map as MapIcon, Home, CreditCard, 
   Smartphone, Bell, Menu, X, Settings, Shield, CheckCircle, AlertCircle,
@@ -114,7 +115,7 @@ export const ClientDashboard: React.FC<DashboardProps> = ({ profile, onLogout, o
        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-deepblue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 shadow-2xl flex flex-col`}>
           <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gold-500 rounded-lg flex items-center justify-center font-serif font-bold text-deepblue-900 text-xl shadow-lg shadow-gold-500/20">R</div>
+                  <img src={LOGO_URL} alt="RAK Oasis" className="h-10 w-auto shrink-0" />
                   <div>
                       <h1 className="font-serif font-bold text-lg tracking-wide text-white">RAK Oasis</h1>
                       <p className="text-[10px] text-gold-400 uppercase tracking-widest font-bold">Client Portal</p>
