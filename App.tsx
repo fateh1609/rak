@@ -13,6 +13,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { SessionManager } from './lib/session';
+import { GeoGate } from './components/GeoGate';
 
 // Critical assets to preload
 const PRELOAD_ASSETS = [
@@ -331,15 +332,17 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <HashRouter>
-      <PageAccessProvider>
-        <CurrencyProvider>
-          <AppContent />
-          <SpeedInsights />
-          <Analytics />
-        </CurrencyProvider>
-      </PageAccessProvider>
-    </HashRouter>
+    <GeoGate>
+      <HashRouter>
+        <PageAccessProvider>
+          <CurrencyProvider>
+            <AppContent />
+            <SpeedInsights />
+            <Analytics />
+          </CurrencyProvider>
+        </PageAccessProvider>
+      </HashRouter>
+    </GeoGate>
   );
 };
 
