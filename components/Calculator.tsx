@@ -6,8 +6,9 @@ import { activePriceAed, activePriceInr, REGULAR_PRICE_AED, PROMO_PRICE_AED, isP
 export const InvestmentCalculator: React.FC = () => {
   const [numPlots, setNumPlots] = useState<number>(1);
   const [plotType, setPlotType] = useState<PlotType>(PlotType.STANDARD);
-  const [downPaymentPct, setDownPaymentPct] = useState<number>(10);
-  const [tenureYears, setTenureYears] = useState<number>(5);
+  // Single plan offered: 10% booking + 60 monthly installments (5 years).
+  const downPaymentPct = 10;
+  const tenureYears = 5;
   const [result, setResult] = useState<CalculationResult>({
     totalAed: 0,
     totalInr: 0,
@@ -117,35 +118,19 @@ export const InvestmentCalculator: React.FC = () => {
           )}
         </div>
 
-        {/* Down Payment & Tenure */}
+        {/* Fixed plan: 10% booking + 60 monthly installments */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Down Payment (%)</label>
-            <select 
-              value={downPaymentPct}
-              onChange={(e) => setDownPaymentPct(Number(e.target.value))}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all bg-white text-gray-900 font-medium"
-            >
-              <option value={10}>10%</option>
-              <option value={20}>20%</option>
-              <option value={30}>30%</option>
-              <option value={40}>40%</option>
-              <option value={50}>50%</option>
-            </select>
+            <label className="block text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Down Payment</label>
+            <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 font-medium flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-gold-500 shrink-0" /> 10% on Booking
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Tenure (Years)</label>
-            <select 
-              value={tenureYears}
-              onChange={(e) => setTenureYears(Number(e.target.value))}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all bg-white text-gray-900 font-medium"
-            >
-              <option value={1}>1 Year</option>
-              <option value={2}>2 Years</option>
-              <option value={3}>3 Years</option>
-              <option value={4}>4 Years</option>
-              <option value={5}>5 Years</option>
-            </select>
+            <label className="block text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Payment Plan</label>
+            <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 font-medium flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-gold-500 shrink-0" /> 60 Monthly Installments
+            </div>
           </div>
         </div>
 
