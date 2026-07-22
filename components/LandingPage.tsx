@@ -411,8 +411,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               <FadeIn delay={500}>
                 <div id="payment" className="p-6 bg-deepblue-900 rounded-xl text-white scroll-mt-32">
                   <h4 className="font-bold text-lg mb-5">Payment Plan Structure</h4>
-                  <div className="flex items-start mb-5">
-                    <div className="pr-6 border-r border-white/15">
+                  <div className="grid grid-cols-2 divide-x divide-white/15 mb-5">
+                    <div className="pr-6">
                       <div className="text-3xl font-bold text-gold-400 leading-none">10%</div>
                       <div className="text-xs opacity-70 mt-1.5">Booking</div>
                     </div>
