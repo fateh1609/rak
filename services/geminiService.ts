@@ -40,9 +40,9 @@ const INTENTS: Intent[] = [
       'The plan is simple: 10% on booking, then the remaining 90% spread over 5 years (60 monthly installments) at 0% interest — paid directly to the developer, so no bank loan or interest is involved. For a standard 1,000 sq.ft plot that is about 13,100 AED on booking and roughly 1,965 AED per month. Book a call and we will prepare an exact schedule.',
   },
   {
-    keywords: ['price', 'pricing', 'cost', 'rate', 'how much', 'per sq', 'per square', 'afford', 'expensive', 'cheap', 'budget', 'aed', 'inr'],
+    keywords: ['price', 'pricing', 'cost', 'rate', 'how much', 'per sq', 'per square', 'afford', 'expensive', 'cheap', 'budget', 'aed', 'inr', 'promo', 'offer', 'discount'],
     answer:
-      'Plots are priced at 131 AED/sq.ft (about 3,275 INR/sq.ft). A standard 1,000 sq.ft plot is therefore around 131,000 AED. Garden-facing and corner plots carry a 5% premium. With the 10% booking plan you can secure a plot from about 13,100 AED upfront. Book a call for current availability and a full cost breakdown.',
+      'The regular price is 351 AED/sq.ft, but a limited government promotional offer brings it down to just 131 AED/sq.ft for a two-month window. At the promotional rate a standard 1,000 sq.ft plot is around 131,000 AED, and with the 10% booking plan you can secure it from about 13,100 AED upfront. Garden-facing and corner plots carry a 5% premium. This is a significant saving, so we recommend booking a call to lock in the promotional price before it ends.',
   },
   {
     keywords: ['size', 'sqft', 'sq.ft', 'square feet', 'plot size', 'how big', 'dimensions', 'area of plot'],

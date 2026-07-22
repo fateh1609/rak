@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlotType, CalculationResult } from '../types';
-import { Calculator, CheckCircle2, Minus, Plus } from 'lucide-react';
+import { Calculator, CheckCircle2, Minus, Plus, Tag } from 'lucide-react';
+import { activePriceAed, activePriceInr, REGULAR_PRICE_AED, PROMO_PRICE_AED, isPromoActive, PROMO_END_LABEL } from '../lib/pricing';
 
 export const InvestmentCalculator: React.FC = () => {
   const [numPlots, setNumPlots] = useState<number>(1);
@@ -14,8 +15,8 @@ export const InvestmentCalculator: React.FC = () => {
     monthlyEmiAed: 0
   });
 
-  const BASE_PRICE_AED = 131;
-  const BASE_PRICE_INR = 3275;
+  const BASE_PRICE_AED = activePriceAed();
+  const BASE_PRICE_INR = activePriceInr();
   const PLOT_SIZE_SQFT = 1000;
 
   useEffect(() => {
@@ -55,6 +56,17 @@ export const InvestmentCalculator: React.FC = () => {
         </div>
         <h3 className="text-xl md:text-2xl font-serif font-bold text-deepblue-900">Investment Calculator</h3>
       </div>
+
+      {isPromoActive() && (
+        <div className="mb-6 md:mb-8 flex items-start gap-3 rounded-xl border border-gold-200 bg-gold-50 p-4">
+          <Tag size={18} className="mt-0.5 shrink-0 text-gold-600" />
+          <p className="text-sm text-deepblue-900">
+            <span className="font-bold">Government promotional price:</span>{' '}
+            <span className="line-through text-gray-400">AED {REGULAR_PRICE_AED}</span>{' '}
+            <span className="font-bold text-gold-700">AED {PROMO_PRICE_AED}/sq.ft</span>. Valid until {PROMO_END_LABEL}.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6 md:space-y-8">
         {/* Asset Stepper */}
@@ -165,6 +177,7 @@ export const InvestmentCalculator: React.FC = () => {
 
         <p className="text-[10px] text-center text-gray-400 italic">
           *Prices are indicative. Currency conversion rates may vary. 0% Interest Plan.
+          {isPromoActive() && ` Calculated at the promotional AED ${PROMO_PRICE_AED}/sq.ft (regular AED ${REGULAR_PRICE_AED}), valid until ${PROMO_END_LABEL}.`}
         </p>
       </div>
     </div>

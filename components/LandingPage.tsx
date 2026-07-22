@@ -8,6 +8,9 @@ import { LocationModal } from './LocationModal';
 import { GeminiAdvisor } from './GeminiAdvisor';
 import { FadeIn } from './FadeIn';
 import { CookieConsent } from './CookieConsent';
+import { PromoBanner } from './PromoBanner';
+import { LeadershipSection } from './LeadershipSection';
+import { REGULAR_PRICE_AED, PROMO_PRICE_AED, REGULAR_PRICE_INR, PROMO_PRICE_INR, isPromoActive } from '../lib/pricing';
 
 // Constants
 const HERO_IMG = "https://iili.io/fQnWtRe.jpg";
@@ -56,8 +59,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   };
 
   return (
+    <>
+    <PromoBanner />
     <div className="min-h-screen font-sans text-gray-800 bg-white relative selection:bg-gold-500 selection:text-white">
-      
+
       {/* Cookie Consent */}
       {showCookieBanner && (
         <CookieConsent onAccept={handleAcceptCookies} onDecline={handleDeclineCookies} />
@@ -195,7 +200,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <FadeIn delay={500}>
               <p className="text-base md:text-xl text-gray-200 leading-relaxed max-w-xl md:max-w-2xl font-light mb-8 md:mb-10 border-l-2 border-gold-500 pl-6">
                 Secure your legacy with premium freehold plots in Ras Al Khaimah's fastest-growing district. 
-                <span className="block mt-2 text-white font-medium">Starting from AED 131/sq.ft with a 5-Year Payment Plan.</span>
+                <span className="block mt-2 text-white font-medium">
+                  {isPromoActive() ? (
+                    <>Government offer: <span className="line-through text-white/50 font-normal">AED {REGULAR_PRICE_AED}</span> <span className="text-gold-400 font-bold">AED {PROMO_PRICE_AED}/sq.ft</span> — 5-Year Payment Plan.</>
+                  ) : (
+                    <>Starting from AED {REGULAR_PRICE_AED}/sq.ft with a 5-Year Payment Plan.</>
+                  )}
+                </span>
               </p>
             </FadeIn>
 
@@ -250,8 +261,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
                 <FadeIn delay={1200} className="flex-1">
                    <div className="bg-deepblue-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl text-center hover:bg-deepblue-900/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-gold-500/10 h-32 flex flex-col justify-center">
-                      <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-bold mb-1">From</div>
-                      <div className="text-3xl lg:text-4xl font-serif text-white mb-1 whitespace-nowrap">AED 131</div>
+                      <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-bold mb-1">{isPromoActive() ? 'Govt Offer' : 'From'}</div>
+                      <div className="text-3xl lg:text-4xl font-serif text-white mb-1 whitespace-nowrap">
+                        AED {isPromoActive() ? PROMO_PRICE_AED : REGULAR_PRICE_AED}
+                        {isPromoActive() && <span className="text-base text-white/40 line-through font-sans ml-2">{REGULAR_PRICE_AED}</span>}
+                      </div>
                       <div className="text-[10px] text-gold-400 uppercase tracking-[0.2em] font-semibold">Per sq/ft.</div>
                    </div>
                 </FadeIn>
@@ -354,7 +368,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     </div>
                     <div>
                       <h4 className="font-serif text-xl md:text-2xl text-deepblue-900 mb-2">Base Price</h4>
-                      <p className="text-gray-600 font-light text-lg">AED 131 per sq.ft / ₹ 3,275 per sq.ft</p>
+                      {isPromoActive() ? (
+                        <p className="text-gray-600 font-light text-lg">
+                          <span className="line-through text-gray-400 mr-2">AED {REGULAR_PRICE_AED}</span>
+                          <span className="text-gold-600 font-semibold">AED {PROMO_PRICE_AED} per sq.ft</span>
+                          <span className="text-gray-500"> / ₹ {PROMO_PRICE_INR.toLocaleString()} per sq.ft</span>
+                          <span className="block text-sm text-gold-600 mt-1">Limited government promotional price</span>
+                        </p>
+                      ) : (
+                        <p className="text-gray-600 font-light text-lg">AED {REGULAR_PRICE_AED} per sq.ft / ₹ {REGULAR_PRICE_INR.toLocaleString()} per sq.ft</p>
+                      )}
                     </div>
                   </div>
                 </FadeIn>
@@ -531,6 +554,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
          </div>
       </section>
 
+      {/* Ras Al Khaimah leadership acknowledgment */}
+      <LeadershipSection />
+
       {/* Footer - The Trust Anchor with "Discovery Deck" */}
       <footer className="bg-deepblue-900 text-white relative pt-0 border-t border-gray-800">
         
@@ -578,7 +604,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                         <BarChart3 size={32} />
                     </div>
                     <h3 className="text-xl md:text-2xl font-serif font-bold mb-1">Pricing</h3>
-                    <p className="text-gray-400 text-sm">Starts AED 131/sq.ft.</p>
+                    <p className="text-gray-400 text-sm">
+                      {isPromoActive()
+                        ? <>AED {PROMO_PRICE_AED}/sq.ft <span className="line-through text-gray-600">AED {REGULAR_PRICE_AED}</span> — govt offer.</>
+                        : <>Starts AED {REGULAR_PRICE_AED}/sq.ft.</>}
+                    </p>
                 </div>
                 <div className="flex items-center text-gold-400 text-xs font-bold uppercase tracking-widest group-hover:gap-2 transition-all mt-6">
                     Payment Plan <ArrowRight size={14} className="ml-1" />
@@ -710,5 +740,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       <AuthModal isOpen={isAuthModalOpen} onClose={closeAuth} onLogin={onLogin} />
       <LocationModal isOpen={isLocationOpen} onClose={closeLocation} />
     </div>
+    </>
   );
 };
