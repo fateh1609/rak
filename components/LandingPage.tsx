@@ -410,18 +410,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
               <FadeIn delay={500}>
                 <div id="payment" className="p-6 bg-deepblue-900 rounded-xl text-white scroll-mt-32">
-                  <h4 className="font-bold text-lg mb-2">Payment Plan Structure</h4>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-1/3 border-r border-white/20">
-                      <div className="text-2xl font-bold text-gold-400">10%</div>
-                      <div className="text-xs opacity-70">Booking</div>
+                  <h4 className="font-bold text-lg mb-5">Payment Plan Structure</h4>
+                  <div className="flex items-start mb-5">
+                    <div className="pr-6 border-r border-white/15">
+                      <div className="text-3xl font-bold text-gold-400 leading-none">10%</div>
+                      <div className="text-xs opacity-70 mt-1.5">Booking</div>
                     </div>
-                    <div className="w-2/3">
-                      <div className="text-2xl font-bold text-gold-400">90%</div>
-                      <div className="text-xs opacity-70">Over 5 Years (60 Monthly Installments)</div>
+                    <div className="pl-6">
+                      <div className="text-3xl font-bold text-gold-400 leading-none">90%</div>
+                      <div className="text-xs opacity-70 mt-1.5">Over 5 Years (60 Monthly Installments)</div>
                     </div>
                   </div>
-                  <p className="text-sm opacity-80 italic">
+                  <p className="text-sm opacity-80 italic pt-4 border-t border-white/10">
                     *Interest-free payment plan direct from developer.
                   </p>
                 </div>
