@@ -1,36 +1,30 @@
 import React from 'react';
 
 /**
- * Prominent, respectful acknowledgment of Ras Al Khaimah's leadership, placed
- * directly after the hero. Displays the official portrait with the Ruler's
- * accurate name and title. It is an honorific reference to the emirate's
- * leadership — not a claim of personal endorsement of this development.
+ * Respectful acknowledgment of Ras Al Khaimah's leadership. Uses the same dark
+ * grid backdrop as the AI advisor section; the Ruler's portrait (a transparent
+ * PNG cutout) sits frameless on the right so the background reads through.
+ *
+ * Honorific reference to the emirate's leadership — not a claim of personal
+ * endorsement of this development.
  */
 export const LeadershipSection: React.FC = () => {
   return (
-    <section className="relative overflow-hidden bg-deepblue-900 text-white py-20 md:py-28">
-      {/* Subtle gold glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(197,160,40,0.14),transparent_60%)]"></div>
+    <section className="relative overflow-hidden bg-gray-900 text-white py-16 md:py-24">
+      {/* Topographic grid (matches the AI advisor section) */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <svg width="100%" height="100%">
+          <pattern id="grid-leadership" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#grid-leadership)" />
+        </svg>
+      </div>
 
-      <div className="relative container mx-auto px-4 md:px-6">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-16">
-          {/* Portrait */}
-          <div className="shrink-0">
-            <div className="relative">
-              <div className="absolute -inset-2 rounded-[1.75rem] bg-gradient-to-br from-gold-500/40 to-transparent blur-sm"></div>
-              <div className="relative w-56 h-72 md:w-64 md:h-80 rounded-3xl overflow-hidden border-2 border-gold-500/50 bg-deepblue-800 shadow-2xl shadow-black/40">
-                <img
-                  src="/highness.png"
-                  alt="His Highness Sheikh Saud bin Saqr Al Qasimi"
-                  className="w-full h-full object-cover object-top"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Text */}
-          <div className="text-center md:text-left flex-1">
+      <div className="container mx-auto px-4 md:px-6 relative z-10">
+        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-12">
+          {/* Text (left) */}
+          <div className="md:w-1/2 text-center md:text-left">
             <div className="flex items-center gap-3 justify-center md:justify-start mb-5">
               <span className="h-px w-8 bg-gold-500"></span>
               <span className="text-gold-400 text-xs uppercase tracking-[0.3em] font-semibold">
@@ -51,6 +45,20 @@ export const LeadershipSection: React.FC = () => {
               region's most dynamic destinations for tourism, lifestyle, and investment. RAK Oasis
               is proud to be part of the emirate's remarkable journey of growth and prosperity.
             </p>
+          </div>
+
+          {/* Portrait (right) — transparent PNG, frameless */}
+          <div className="md:w-1/2 w-full flex justify-center md:justify-end">
+            <div className="relative">
+              {/* Soft glow so the cutout reads on the dark grid */}
+              <div className="pointer-events-none absolute inset-0 -z-0 bg-[radial-gradient(circle_at_50%_45%,rgba(197,160,40,0.22),transparent_65%)] blur-xl"></div>
+              <img
+                src="/highness.png"
+                alt="His Highness Sheikh Saud bin Saqr Al Qasimi"
+                className="relative z-10 w-auto max-h-[380px] md:max-h-[460px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.5)]"
+                loading="lazy"
+              />
+            </div>
           </div>
         </div>
       </div>

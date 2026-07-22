@@ -282,9 +282,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       </section>
 
-      {/* Ras Al Khaimah leadership acknowledgment */}
-      <LeadershipSection />
-
       {/* Overview Section */}
       <section id="overview" className="py-16 md:py-32 bg-[#F9F8F4] scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6">
@@ -328,6 +325,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </div>
       </section>
+
+      {/* Ras Al Khaimah leadership acknowledgment */}
+      <LeadershipSection />
 
       {/* Developer Branding Section */}
       <section className="py-14 bg-white border-t border-gray-100">
