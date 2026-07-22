@@ -282,6 +282,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       </section>
 
+      {/* Ras Al Khaimah leadership acknowledgment */}
+      <LeadershipSection />
+
       {/* Overview Section */}
       <section id="overview" className="py-16 md:py-32 bg-[#F9F8F4] scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6">
@@ -553,9 +556,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </FadeIn>
          </div>
       </section>
-
-      {/* Ras Al Khaimah leadership acknowledgment */}
-      <LeadershipSection />
 
       {/* Footer - The Trust Anchor with "Discovery Deck" */}
       <footer className="bg-deepblue-900 text-white relative pt-0 border-t border-gray-800">
