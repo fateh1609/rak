@@ -666,9 +666,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               <div>
                  <h4 className="text-white font-bold mb-6 tracking-wide uppercase text-xs">Connect</h4>
                  <div className="flex flex-col gap-4">
-                    <a href="tel:+97140000000" className="text-xl font-bold text-gold-400 hover:text-white transition-colors">+971 4 000 0000</a>
+                    <a href="tel:+971585131333" className="text-xl font-bold text-gold-400 hover:text-white transition-colors">+971 58 513 1333</a>
                     <a href="mailto:sales@rakoasis.com" className="hover:text-white transition-colors">sales@rakoasis.com</a>
-                    <a href="https://wa.me/97140000000" className="flex items-center gap-2 hover:text-white transition-colors text-green-400">
+                    <a href="https://wa.me/971585131333" className="flex items-center gap-2 hover:text-white transition-colors text-green-400">
                         <MessageCircle size={16} /> Chat on WhatsApp
                     </a>
                  </div>

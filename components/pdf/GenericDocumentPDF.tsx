@@ -71,7 +71,7 @@ export const GenericDocumentPDF = ({ data }: { data: any }) => (
       </View>
 
       <Text style={styles.footer}>
-        RAK Oasis Estate | Ras Al Khaimah, UAE | Support: +971 4 000 0000 | www.rakoasis.com
+        RAK Oasis Estate | Ras Al Khaimah, UAE | Support: +971 58 513 1333 | www.rakoasis.com
       </Text>
     </Page>
   </Document>

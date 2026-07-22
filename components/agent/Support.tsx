@@ -82,7 +82,7 @@ export const SupportView = () => {
                     </div>
                     <h3 className="font-bold text-gray-900 text-lg">Call Us</h3>
                     <p className="text-sm text-gray-500 mb-4">Mon-Sat, 9AM - 6PM (GST)</p>
-                    <p className="text-lg font-bold text-deepblue-900 mb-2 text-center">+971 4 000 0000</p>
+                    <p className="text-lg font-bold text-deepblue-900 mb-2 text-center">+971 58 513 1333</p>
                     <Button variant="outline" fullWidth>Call Now</Button>
                 </div>
             </div>

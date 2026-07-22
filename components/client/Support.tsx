@@ -12,7 +12,7 @@ export const SupportView = () => (
                 </div>
                 <h3 className="font-bold text-lg text-gray-900 mb-2">Call Us</h3>
                 <p className="text-sm text-gray-500 mb-4">Mon-Fri from 9am to 6pm</p>
-                <a href="tel:+97140000000" className="text-blue-600 font-bold hover:underline">+971 4 000 0000</a>
+                <a href="tel:+971585131333" className="text-blue-600 font-bold hover:underline">+971 58 513 1333</a>
             </div>
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
                 <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
