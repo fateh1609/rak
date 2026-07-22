@@ -10,6 +10,7 @@ import { FadeIn } from './FadeIn';
 import { CookieConsent } from './CookieConsent';
 import { PromoBanner } from './PromoBanner';
 import { LeadershipSection } from './LeadershipSection';
+import { MasterPlanSection } from './MasterPlanSection';
 import { REGULAR_PRICE_AED, PROMO_PRICE_AED, REGULAR_PRICE_INR, PROMO_PRICE_INR, isPromoActive } from '../lib/pricing';
 
 // Constants
@@ -329,6 +330,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       {/* Ras Al Khaimah leadership acknowledgment */}
       <LeadershipSection />
 
+      {/* Master Plan */}
+      <MasterPlanSection />
+
       {/* Developer Branding Section */}
       <section className="py-14 bg-white border-t border-gray-100">
         <div className="container mx-auto px-4 text-center">
@@ -571,10 +575,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <div className="container mx-auto px-4 md:px-6 relative z-10 -mt-24 mb-20">
           <FadeIn delay={300}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Card 1: Vision */}
-              <div 
-                onClick={openLocation}
-                onKeyDown={(e) => e.key === 'Enter' && openLocation()}
+              {/* Card 1: Master Plan */}
+              <div
+                onClick={() => document.getElementById('masterplan')?.scrollIntoView({ behavior: 'smooth' })}
+                onKeyDown={(e) => e.key === 'Enter' && document.getElementById('masterplan')?.scrollIntoView({ behavior: 'smooth' })}
                 role="button"
                 tabIndex={0}
                 className="bg-deepblue-900/95 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[20px] shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer h-full flex flex-col justify-between"
@@ -667,7 +671,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                  <h4 className="text-white font-bold mb-6 tracking-wide uppercase text-xs">Project</h4>
                  <ul className="space-y-4">
                     <li><a href="#" className="hover:text-gold-400 transition-colors">The Vision</a></li>
-                    <li><a href="#" className="hover:text-gold-400 transition-colors">Masterplan</a></li>
+                    <li><a href="#masterplan" className="hover:text-gold-400 transition-colors">Masterplan</a></li>
                     <li><a href="#" className="hover:text-gold-400 transition-colors">Photo Gallery</a></li>
                  </ul>
               </div>
