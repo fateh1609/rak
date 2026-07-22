@@ -13,7 +13,7 @@ import React, { useEffect, useState } from 'react';
  * layer already blocks foreign traffic in production).
  */
 
-const ALLOWED_COUNTRY = 'IN';
+const BLOCKED_COUNTRY = 'AE';
 const LOOKUP_TIMEOUT_MS = 2500;
 
 async function detectCountry(signal: AbortSignal): Promise<string | null> {
@@ -38,12 +38,12 @@ export const GeoGate: React.FC<{ children: React.ReactNode }> = ({ children }) =
     detectCountry(controller.signal)
       .then((country) => {
         if (!active) return;
-        if (country && country !== ALLOWED_COUNTRY) {
-          // Confident non-India result → hand off to the static block page.
+        if (country && country === BLOCKED_COUNTRY) {
+          // Confident UAE result → hand off to the static block page.
           window.location.replace('/blocked.html');
           return; // keep rendering nothing while the navigation happens
         }
-        setState('allowed'); // India, or unknown → allow (fail open)
+        setState('allowed'); // Non-UAE, or unknown → allow (fail open)
       })
       .catch(() => {
         if (active) setState('allowed'); // network error / timeout → fail open

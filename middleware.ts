@@ -23,12 +23,12 @@ export const config = {
   matcher: ['/((?!assets/|blocked.html|favicon|robots.txt|sitemap.xml|.*\\.[a-zA-Z0-9]+$).*)'],
 };
 
-const ALLOWED_COUNTRY = 'IN';
+const BLOCKED_COUNTRY = 'AE';
 
 export default function middleware(request: Request) {
   const country = request.headers.get('x-vercel-ip-country') || '';
 
-  if (country && country !== ALLOWED_COUNTRY) {
+  if (country && country === BLOCKED_COUNTRY) {
     return rewrite(new URL('/blocked.html', request.url));
   }
 
