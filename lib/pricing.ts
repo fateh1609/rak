@@ -6,7 +6,7 @@
  * automatically reverts to the regular price (no redeploy needed).
  */
 
-export const REGULAR_PRICE_AED = 351;
+export const REGULAR_PRICE_AED = 251;
 export const REGULAR_PRICE_INR = 8775; // 351 AED at the 25 INR/AED rate used across the app
 
 export const PROMO_PRICE_AED = 131;
