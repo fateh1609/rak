@@ -11,7 +11,7 @@ import React from 'react';
  */
 export const LeadershipSection: React.FC = () => {
   return (
-    <section className="relative overflow-hidden bg-gray-900 text-white pt-16 md:pt-24">
+    <section className="relative overflow-hidden bg-gray-900 text-white pt-16 md:pt-24 pb-16 md:pb-0">
       {/* Topographic grid (matches the AI advisor section) */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
         <svg width="100%" height="100%">
