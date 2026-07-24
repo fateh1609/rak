@@ -14,6 +14,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { SessionManager } from './lib/session';
 import { GeoGate } from './components/GeoGate';
+import { MetaPixel } from './components/MetaPixel';
 
 // Critical assets to preload
 const PRELOAD_ASSETS = [
@@ -337,6 +338,7 @@ const App = () => {
         <PageAccessProvider>
           <CurrencyProvider>
             <AppContent />
+            <MetaPixel />
             <SpeedInsights />
             <Analytics />
           </CurrencyProvider>
