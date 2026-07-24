@@ -19,7 +19,7 @@ const formatRemaining = (ms: number): string => {
 
 /**
  * Thin top strip announcing the government promotional price (131 AED/sq.ft,
- * down from 351) with a live countdown. Renders nothing once the promo ends.
+ * down from 251) with a live countdown. Renders nothing once the promo ends.
  */
 export const PromoBanner: React.FC = () => {
   const [remaining, setRemaining] = useState(() => PROMO_END.getTime() - Date.now());

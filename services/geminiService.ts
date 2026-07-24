@@ -42,7 +42,7 @@ const INTENTS: Intent[] = [
   {
     keywords: ['price', 'pricing', 'cost', 'rate', 'how much', 'per sq', 'per square', 'afford', 'expensive', 'cheap', 'budget', 'aed', 'inr', 'promo', 'offer', 'discount'],
     answer:
-      'The regular price is 351 AED/sq.ft, but a limited government promotional offer brings it down to just 131 AED/sq.ft for a two-month window. At the promotional rate a standard 1,000 sq.ft plot is around 131,000 AED, and with the 10% booking plan you can secure it from about 13,100 AED upfront. Garden-facing and corner plots carry a 5% premium. This is a significant saving, so we recommend booking a call to lock in the promotional price before it ends.',
+      'The regular price is 251 AED/sq.ft, but a limited government promotional offer brings it down to just 131 AED/sq.ft for a two-month window. At the promotional rate a standard 1,000 sq.ft plot is around 131,000 AED, and with the 10% booking plan you can secure it from about 13,100 AED upfront. Garden-facing and corner plots carry a 5% premium. This is a significant saving, so we recommend booking a call to lock in the promotional price before it ends.',
   },
   {
     keywords: ['size', 'sqft', 'sq.ft', 'square feet', 'plot size', 'how big', 'dimensions', 'area of plot'],

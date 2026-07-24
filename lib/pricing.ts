@@ -1,13 +1,13 @@
 /**
  * Central pricing config.
  *
- * Regular price is 351 AED/sq.ft. A limited government promotional offer brings
+ * Regular price is 251 AED/sq.ft. A limited government promotional offer brings
  * it down to 131 AED/sq.ft for 2 months. When the promo window ends, the site
  * automatically reverts to the regular price (no redeploy needed).
  */
 
 export const REGULAR_PRICE_AED = 251;
-export const REGULAR_PRICE_INR = 8775; // 351 AED at the 25 INR/AED rate used across the app
+export const REGULAR_PRICE_INR = 6275; // 251 AED at the 25 INR/AED rate used across the app
 
 export const PROMO_PRICE_AED = 131;
 export const PROMO_PRICE_INR = 3275; // 131 AED at 25 INR/AED
